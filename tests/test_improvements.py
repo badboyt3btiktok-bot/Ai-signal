@@ -206,7 +206,8 @@ print("SEED SKILL REFRESH OK")
 # ---------- 8) صفحة المدينة ----------
 from city import cityview
 h = cityview.render(fragment=False)
-assert "<!doctype html>" in h and "هيكل الشركة" in h and "engineer" in h and 'class="tower' in h
-assert "<script>alert(1)</script>" not in h, "city view must escape user text"
-assert "Agent City" in cityview.render()
+assert "<!doctype html>" in h and "NEXUS" in h and '"key": "engineer"' in h and "مجلس المدينة" in h
+assert "<script>alert(1)" not in h and "\\u003cscript\\u003ealert(1)" in h, "user text must not break out of the data JSON"
+assert "هيكل الشركة" in cityview.render_classic()
+assert "Agent City" in cityview.render() and "esc(" in cityview.render()
 print("CITY VIEW OK")

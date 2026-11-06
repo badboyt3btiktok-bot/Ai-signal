@@ -72,7 +72,7 @@ assert "Total trials so far: 6" in s and "cheat" in s
 # صفحة المدينة فيها المختبر
 from city import cityview
 h = cityview.render()
-assert "مختبر الاستراتيجيات" in h and "trend" in h
+assert "مختبر الاستراتيجيات" in h and '"name": "trend"' in h
 
 # حفظ واسترجاع ذاكرة المدينة
 from city import persist

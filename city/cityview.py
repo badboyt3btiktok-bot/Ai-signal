@@ -13,7 +13,7 @@ ROLE_AR = {"researcher": "باحث", "engineer": "مهندس", "analyst": "مح�
 TOOL_AR = {"read_file": "قراءة ملفات", "write_file": "كتابة ملفات", "list_files": "تصفح الملفات",
            "run_python": "تشغيل كود (Docker)", "shell": "أوامر shell (بموافقتك)", "fetch_url": "إنترنت (قراءة)",
            "request_approval": "طلب موافقة", "save_skill": "حفظ مهارة", "list_skills": "عرض المهارات",
-           "load_skill": "قراءة مهارة"}
+           "load_skill": "قراءة مهارة", "lab_submit": "تقديم للمختبر", "lab_board": "لوحة المختبر"}
 RISKY = {"shell": "danger", "run_python": "box", "fetch_url": "net"}
 STATUS_AR = {"done": "خلصت", "running": "شغالة", "pending": "بالانتظار", "blocked": "بانتظار موافقتك",
              "failed": "فشلت", "queued": "بالدور", "needs_attention": "بدها انتباه", "paused_budget": "وقفت (السقف)",
@@ -153,6 +153,12 @@ def _windows(n_on, total):
 
 
 def render(fragment=True):
+    """الصفحة الحالية للمدينة: تصميم NEXUS (city/nexus.py). الكلاسيكية: render_classic."""
+    from . import nexus
+    return nexus.render(fragment)
+
+
+def render_classic(fragment=True):
     d = data()
     st, agents = d["st"], d["st"]["agents"]
     projects = sorted(st["projects"].values(), key=lambda p: p["created"])

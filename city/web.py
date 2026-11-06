@@ -159,7 +159,8 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/city":
             from . import cityview
             return self._send(200, cityview.render(fragment=False), extra=[("Content-Security-Policy",
-                "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com")])
+                "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; "
+                "font-src https://fonts.gstatic.com; img-src data:")])
         if u.path == "/new":
             body = (f'<form method="post" action="/add"><input type="hidden" name="csrf" value="{E(csrf)}">'
                     '<p>طلب جديد للمدير:</p><textarea name="text" required></textarea>'
