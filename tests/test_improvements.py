@@ -202,3 +202,11 @@ try:
 except PermissionError:
     pass
 print("SEED SKILL REFRESH OK")
+
+# ---------- 8) صفحة المدينة ----------
+from city import cityview
+h = cityview.render(fragment=False)
+assert "<!doctype html>" in h and "هيكل الشركة" in h and "engineer" in h and 'class="tower' in h
+assert "<script>alert(1)</script>" not in h, "city view must escape user text"
+assert "Agent City" in cityview.render()
+print("CITY VIEW OK")

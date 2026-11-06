@@ -22,7 +22,8 @@ python agentcity.py approve a1   # ثم run
 python agentcity.py stop         # إيقاف طوارئ فوري (resume للاستئناف)
 python agentcity.py sandbox      # ابني صورة Docker لعزل كود الايجنت (مرة وحدة)
 python agentcity.py data         # نزّل بيانات الذهب وجمّدها (الـ sandbox بدون إنترنت)
-python agentcity.py web          # واجهة مراقبة وموافقات للموبايل (بيطبع رابط فيه توكن)
+python agentcity.py web          # واجهة مراقبة وموافقات للموبايل (بيطبع رابط فيه توكن)، وفيها /city
+python agentcity.py view         # صفحة HTML بتوريك المدينة: أفق الايجنت، هيكل الشركة، الفريق، المشاريع، الخط الزمني
 python tests/test_city.py        # اختبار منطق المدينة بدون API
 python tests/test_improvements.py # sandbox، قواعد المخاطر، البروتوكول، الطابور، الويب
 python tests/test_api_contract.py # اختبار توافق مع قواعد Claude API (thinking, max_tokens, refusal, JSON, سقف التوكنز)

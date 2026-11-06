@@ -71,7 +71,7 @@ def page(s, csrf):
     if s["stop"]:
         out.append(f'<div class="banner row">⛔ إيقاف الطوارئ مفعّل {form("/resume", "استئناف", csrf)}</div>')
     out.append(f'<div class="row mut">المشغّل: {"شغال" if s["runner"] else "متوقف"} · '
-               f'<a href="/">تحديث</a> · <a href="/new">طلب جديد</a></div>')
+               f'<a href="/">تحديث</a> · <a href="/city">🏙️ شوف المدينة</a> · <a href="/new">طلب جديد</a></div>')
     if not s["stop"]:
         out.append(f'<div class="row" style="margin-top:8px">{form("/stop", "⛔ إيقاف طوارئ", csrf, "bad")}</div>')
     pend = [a for a in s["approvals"] if a["status"] == "pending"]
@@ -132,7 +132,8 @@ class H(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(b)))
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
-        self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'")
+        if not any(k == "Content-Security-Policy" for k, _ in extra):
+            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'")
         for k, v in extra:
             self.send_header(k, v)
         self.end_headers()
@@ -155,6 +156,10 @@ class H(BaseHTTPRequestHandler):
         csrf = self.TOKEN
         if u.path == "/":
             return self._send(200, shell(page(snapshot(), csrf)))
+        if u.path == "/city":
+            from . import cityview
+            return self._send(200, cityview.render(fragment=False), extra=[("Content-Security-Policy",
+                "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com")])
         if u.path == "/new":
             body = (f'<form method="post" action="/add"><input type="hidden" name="csrf" value="{E(csrf)}">'
                     '<p>طلب جديد للمدير:</p><textarea name="text" required></textarea>'

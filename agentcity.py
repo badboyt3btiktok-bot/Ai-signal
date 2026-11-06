@@ -16,6 +16,7 @@ sub.add_parser("stop", help="مفتاح إيقاف طوارئ"); sub.add_parser(
 sub.add_parser("sandbox", help="ابني صورة Docker لعزل كود الايجنت")
 dd = sub.add_parser("data", help="نزّل بيانات الذهب الحقيقية (GC=F) وجمّدها لكل الفريق")
 dd.add_argument("--refresh", action="store_true", help="تحديث النسخة المجمّدة (بيغيّر train/val/test لأي مشروع شغال!)")
+V = sub.add_parser("view", help="ولّد صفحة HTML بتوريك المدينة والايجنت والمشاريع"); V.add_argument("--out", default="city.html")
 L = sub.add_parser("llm", help="وضع CITY_BACKEND=file: اعرض الطلبات المعلقة أو رد عليها")
 L.add_argument("action", choices=["show", "reply"]); L.add_argument("n", nargs="?", type=int)
 L.add_argument("--file"); L.add_argument("--full", action="store_true")
@@ -67,6 +68,11 @@ if args.cmd == "llm":
     tmp = os.path.join(d, "outbox", f"{n}.json.tmp")
     open(tmp, "w", encoding="utf-8").write(body); os.replace(tmp, os.path.join(d, "outbox", f"{n}.json"))
     sys.exit(print(f"replied {n}"))
+if args.cmd == "view":
+    store.init()
+    from city import cityview
+    open(args.out, "w", encoding="utf-8").write(cityview.render(fragment=False))
+    sys.exit(print("انكتبت:", args.out))
 if args.cmd == "web":
     from city import web
     sys.exit(web.serve(args.host, args.port))
