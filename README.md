@@ -1,0 +1,39 @@
+# Agent City: شركة ايجنت مستقلة
+
+أنت بتحكي مع **المدير (CEO)** بس. بتقله "بدي كذا"، وهو بيخطط، وبيوزع، والفريق بينفذ، وبيرجعلك تقرير.
+بعد فترة بتجيبله طلب ثاني، فبيشتغل عليه والمدينة بتتذكر اللي تعلمته.
+
+## شو بيميّزها
+- **أي مشروع:** مش مربوطة بمجال. مؤشر الذهب هو مجرد أول مشروع (`examples/gold_indicator.txt`).
+- **توظيف تلقائي (HR):** إذا المهمة بتحتاج دور مش موجود (مثلاً Data Scientist)، بتنخلق ايجنت جديد بصلاحيات أقل ما يمكن.
+- **تعلّم:** أي ايجنت بيكتشف طريقة مفيدة بيحفظها كـ Skill (`save_skill`) وكل المدينة بتستفيد بالمشاريع الجاية. وبعد كل مشروع المدير بيسجّل دروس.
+- **مراجعة مستقلة:** ايجنت QA بيفتح الملفات وبيشغّل الكود قبل ما تتحسب أي مهمة منتهية. إذا فشلت: إعادة، ثم المدير بيعيد صياغتها، ثم فشل معلن.
+- **أمان:** صلاحيات لكل ايجنت حسب دوره، `shell` وأي فعل خارجي بحتاج موافقتك (بدون ما توقف باقي المدينة)، سقف توكنز لكل مشروع، سجل تدقيق `audit.jsonl`، وزر إيقاف طوارئ.
+
+## التشغيل
+```
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY=...
+python agentcity.py add --file examples/gold_indicator.txt
+python agentcity.py run          # أو: serve  (المدينة بتضل شغالة وبتستنى طلباتك)
+python agentcity.py status
+python agentcity.py approvals    # أي شي استنى موافقتك
+python agentcity.py approve a1   # ثم run
+python agentcity.py stop         # إيقاف طوارئ فوري (resume للاستئناف)
+python tests/test_city.py        # اختبار منطق المدينة بدون API
+python tests/test_api_contract.py # اختبار توافق مع قواعد Claude API (thinking, max_tokens, refusal, JSON, سقف التوكنز)
+```
+كل شغل الايجنت بمجلد `city_home/workspace/<project>/`، والمهارات بـ `city_home/skills/`.
+
+## متغيرات
+`CITY_MODEL` (الافتراضي claude-sonnet-5-5)، `CITY_TOKEN_BUDGET` (600000 لكل مشروع، بينفرض حتى جوا المهمة)، `CITY_OWNER_LANG`،
+`CITY_EFFORT` (medium)، `CITY_MAX_TOKENS` (16000)، `CITY_FALLBACKS` (1 = تحويل تلقائي لنموذج ثاني عند الرفض، 0 لإيقافه)، `CITY_RUN_TIMEOUT` (300 ثانية).
+
+التوكنز المحسوبة = input + cache write + cache read + output (يعني السقف محافظ). `status` بيعرض كمان تقدير الكلفة بالدولار.
+
+## تنبيهات صريحة
+- `run_python` مش sandbox حقيقي (تشغيل Python محلي بدون مفتاح API وبمهلة). شغّل المدينة داخل Docker أو VM، خصوصاً مع `fetch_url` و`shell`.
+- لحد هلأ ما اختبرتها مع Claude الحقيقي، فقط منطق المدينة بنموذج وهمي. أول تشغيل راقب `status` و`audit.jsonl`.
+- ملفات `shared/gold_toolkit` الأصلية (risk.py, backtest.py...) محمية: write_file بيرفضها، وقبل كل مهمة بتنفحص وبترجع من seed إذا انعدّلت (`tamper_restored` بالتدقيق). الايجنت بيقدروا يضيفوا ملفات جديدة.
+- بيانات الذهب: `data.from_yahoo()` (يحتاج `pip install yfinance`) بينزّل GC=F مرة وبيجمّدها بـ `shared/data/gold_GCF_daily.csv`. GC=F عقود آجلة، مش سبوت XAUUSD بالظبط.
+- مشروع الذهب: إشارات فقط، وليس نصيحة مالية.
