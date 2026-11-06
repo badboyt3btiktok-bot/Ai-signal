@@ -64,3 +64,4 @@
 {"t": "2026-11-06 07:51:52", "event": "tool", "agent": "writer", "project": "p3", "task": "t3", "tool": "write_file", "error": false}
 {"t": "2026-11-06 07:52:05", "event": "tool", "agent": "qa", "project": "p3", "task": "t3-qa", "tool": "run_python", "error": false}
 {"t": "2026-11-06 07:52:10", "event": "task", "project": "p3", "task": "t3", "agent": "writer", "status": "done", "tokens": 9186}
+{"t": "2026-11-06 12:00:25", "event": "resume", "via": "page"}

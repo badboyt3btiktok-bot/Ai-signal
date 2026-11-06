@@ -20,6 +20,7 @@ LB = sub.add_parser("lab", help="مختبر الاستراتيجيات: board | 
 LB.add_argument("action", choices=["board", "daily", "submit"]); LB.add_argument("file", nargs="?"); LB.add_argument("--name")
 sub.add_parser("research-day", help="جولة بحث يومية: المختبر بيتحدّث، والمدير بيستلم مهمة بحث جديدة")
 SS = sub.add_parser("state", help="احفظ/رجّع ذاكرة المدينة (city_state/ بالريبو)"); SS.add_argument("action", choices=["export", "import"])
+IA = sub.add_parser("inbox-apply", help="نفّذ أمر وصل من صفحة المدينة (JSON) ورجّع النتيجة"); IA.add_argument("cmd_json")
 V = sub.add_parser("view", help="ولّد صفحة HTML بتوريك المدينة والايجنت والمشاريع"); V.add_argument("--out", default="city.html")
 L = sub.add_parser("llm", help="وضع CITY_BACKEND=file: اعرض الطلبات المعلقة أو رد عليها")
 L.add_argument("action", choices=["show", "reply"]); L.add_argument("n", nargs="?", type=int)
@@ -103,6 +104,40 @@ if args.cmd == "state":
     store.init()
     from city import persist
     sys.exit(print(persist.export_state() if args.action == "export" else persist.import_state()))
+if args.cmd == "inbox-apply":
+    store.init()
+    try:
+        cmd = json.loads(args.cmd_json)
+        kind = cmd.get("kind")
+        if kind == "request":
+            text = str(cmd.get("text", "")).strip()
+            if not 5 <= len(text) <= 4000:
+                raise ValueError("نص الطلب لازم يكون بين 5 و4000 حرف")
+            if store.runner_alive():
+                store.enqueue("request", text=text, via="page"); res = {"status": "applied", "note": "وصل للمشغّل الشغال"}
+            else:
+                res = {"status": "applied", "note": "صار مشروع " + City().add_request(text)}
+        elif kind in ("approve", "deny"):
+            aid = str(cmd.get("approval", ""))
+            a = store.load()["approvals"].get(aid)
+            if not a or a["status"] != "pending":
+                raise ValueError(f"ما في طلب موافقة معلّق بهالرقم ({aid})")
+            store.enqueue("decision", id=aid, ok=kind == "approve", via="page")
+            if not store.runner_alive():
+                City()
+            res = {"status": "applied", "note": ("انوافق على " if kind == "approve" else "انرفض ") + aid}
+        elif kind == "stop":
+            open(store.path("STOP"), "w").close(); store.audit("stop", via="page")
+            res = {"status": "applied", "note": "المدينة وقفت"}
+        elif kind == "resume":
+            if store.killed():
+                os.remove(store.path("STOP"))
+            store.audit("resume", via="page"); res = {"status": "applied", "note": "المدينة رجعت تشتغل"}
+        else:
+            raise ValueError(f"نوع أمر مش معروف: {kind}")
+    except Exception as e:
+        res = {"status": "rejected", "note": str(e)[:200]}
+    sys.exit(print(json.dumps(res, ensure_ascii=False)))
 if args.cmd == "view":
     store.init()
     from city import cityview

@@ -109,7 +109,9 @@ def payload():
                   "tasks": len(tasks), "tools": sum(tool_n.values()), "tokens": sum(P["tokens"] for P in projects),
                   "forward": sum(s["status"] == "forward" for s in strategies), "trials": len(trials),
                   "attention": len(pend) + sum(P["status"] in ("blocked", "needs_attention", "paused_error") for P in projects)},
-        "districts": ds, "strategies": strategies, "feed": feed,
+        "districts": ds, "strategies": strategies, "feed": feed, "stopped": store.killed(),
+        "approvals": [{"id": a["id"], "action": a["action"], "details": str(a["details"])[:300], "agent": a["agent"],
+                       "project": a["project"]} for a in pend],
         "lessons": st["lessons"][-6:], "skills": [l[2:] for l in tools.skill_index().splitlines() if l.startswith("- ")],
         "projects": [{"id": P["id"], "status": P["status"], "st_ar": STATUS_AR.get(P["status"], P["status"]),
                       "req": P["request"][:140].replace("\n", " "), "tokens": P["tokens"], "n": len(P["tasks"]),
@@ -196,6 +198,26 @@ main{flex:999 1 600px;min-width:0;display:flex;flex-direction:column;gap:16px}
 .proj{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
 .proj .r{min-width:0;overflow-wrap:anywhere}
 ul.plain{margin:0;padding-inline-start:18px;font-size:13px;color:var(--mut2)}
+.hbtns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{min-height:44px;padding:0 16px;border-radius:10px;font:700 14px var(--f);cursor:pointer;border:1px solid var(--line2);background:var(--panel2);color:var(--ink)}
+.btn.pri{background:var(--cyan);border:none;color:#04121A}
+.btn.stop{background:transparent;border-color:rgba(255,122,144,.6);color:var(--pink)}
+.btn.go{background:transparent;border-color:rgba(61,245,160,.6);color:var(--green)}
+.btn.ok{background:var(--green);border:none;color:#03140C}
+.btn.no{background:transparent;border-color:rgba(255,122,144,.6);color:var(--pink)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.cmdbox{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:16px}
+.cmdbox label{font-size:13px;color:var(--mut)}
+textarea{resize:vertical;min-height:84px;padding:12px;border-radius:10px;background:var(--bg);border:1px solid var(--line2);color:var(--ink);font:15px/1.6 var(--f)}
+textarea:focus-visible{outline:2px solid var(--cyan);outline-offset:1px}
+.msg{font-size:13px;color:var(--mut);min-height:1.2em}
+.msg.err{color:var(--pink)}.msg.ok{color:var(--green)}
+.appr{padding:12px;border-radius:12px;background:var(--panel2);border:1px solid rgba(255,181,71,.4);margin-bottom:10px}
+.appr code{display:block;font-family:var(--m);font-size:12.5px;color:#FFD599;direction:ltr;text-align:left;margin:6px 0 10px;overflow-wrap:anywhere}
+.cmd{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.cmd .r{min-width:0;overflow-wrap:anywhere}.cmd .note2{font-size:12.5px;color:var(--mut)}
+.badge{font-size:12px;font-weight:700;white-space:nowrap;padding:2px 9px;border-radius:999px;border:1px solid}
+.badge.pending{color:var(--amber);border-color:rgba(255,181,71,.5)}.badge.applied{color:var(--green);border-color:rgba(61,245,160,.5)}.badge.rejected{color:var(--pink);border-color:rgba(255,122,144,.5)}
 @media (prefers-reduced-motion:reduce){.live,.walker,.packet{animation:none!important}}
 </style>
 <div class="deck" dir="rtl" lang="ar">
@@ -203,11 +225,16 @@ ul.plain{margin:0;padding-inline-start:18px;font-size:13px;color:var(--mut2)}
   <div class="logo"><div class="mk"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 13V3l6 7V3M14 3v10" stroke="#3DE0FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
   <div><b>NEXUS</b><small>مدينة الـ Agents تبعك</small></div></div>
   <div class="pills" id="pills"></div>
+  <div class="hbtns"><button type="button" class="btn stop" id="b-stop">⛔ إيقاف طوارئ</button><button type="button" class="btn go" id="b-resume">▶ استئناف</button></div>
 </header>
 <div class="grid">
   <aside aria-live="polite" id="side"></aside>
   <main>
     <div class="map" id="map"><div class="stage" id="stage"><div class="cap"><span>خريطة المدينة</span><span style="color:var(--green)">● من بيانات حقيقية</span></div></div></div>
+    <div class="cols">
+      <section class="card"><h2>بانتظار موافقتك</h2><div id="apprs"></div></section>
+      <section class="card"><h2>صندوق الأوامر</h2><p class="note">المدينة بتقرأ أوامرك وبتنفّذها بجولتها اليومية (23:17 UTC)، أو فوراً إذا كنت عم تحكي مع Claude. الحالة بتتحدّث هون لحالها.</p><div id="inbox"><div class="empty">عم يحمّل...</div></div></section>
+    </div>
     <div class="cols">
       <section class="card"><h2><span class="dot live"></span>البث المباشر</h2><ul class="feed" id="feed"></ul></section>
       <section class="card"><h2>مختبر الاستراتيجيات</h2><p class="note" id="labnote"></p><div id="strats"></div></section>
@@ -321,6 +348,10 @@ function pick(k) {
     <div><div class="h">النشاط حسب الساعة</div>${bars}</div>
     ${d.top.length ? `<div><div class="h">أكتر شي بيستعمل</div><div class="chips">${d.top.map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div></div>` : ""}
     <div><div class="h">${k === "ceo" ? "المشاريع" : k === "lab" ? "الأفكار" : "الشغل"}</div>${jobs}</div>${tools}
+    <div class="cmdbox"><div class="h" style="margin:0">أمر جديد للمدينة</div>
+      <label for="cmdtext">الأمر بيوصل للمدير، وهو بيخطط وبيوزع على الأحياء</label>
+      <textarea id="cmdtext" maxlength="4000" placeholder="مثال: جرّبوا أفكار على الفضة كمان، وقارنوها مع الذهب"></textarea>
+      <button type="button" class="btn pri" id="b-send">أرسل للمدينة</button><div class="msg" id="sendmsg" role="status"></div></div>
     <div style="font-size:12px;color:var(--mut);border-top:1px solid var(--line);padding-top:12px">الألوان: <span class="chip approve">بحتاج موافقتك</span> <span class="chip box">معزول بـ Docker</span> <span class="chip net">إنترنت</span></div>`;
 }
 pick("ceo");
@@ -338,6 +369,73 @@ $("#strats").innerHTML = [...D.strategies].sort((a, b) => (b.status === "forward
   return `<div class="strat ${fw ? "fw" : ""}"><div class="top"><span class="nm">${esc(s.name)}</span><span class="st ${fw ? "done" : "failed"}">${lbl}</span></div><div class="hy">${esc(s.hyp)}</div>${meter}</div>`;
 }).join("") || '<div class="empty">ما في أفكار لسا.</div>';
 $("#projs").innerHTML = D.projects.map(p => `<div class="proj"><div class="r"><b class="mono">${esc(p.id)}</b> · ${esc(p.req)}<div class="empty">${p.done}/${p.n} مهام · ${p.tokens.toLocaleString("en")} توكن</div></div><span class="st ${esc(p.status)}">${esc(p.st_ar)}</span></div>`).join("");
+// ---------- الأوامر: بتنحفظ بقاعدة بيانات الصفحة (inbox) والمدينة بتنفّذها ----------
+const KIND = { request: "طلب جديد", approve: "موافقة", deny: "رفض", stop: "إيقاف طوارئ", resume: "استئناف" };
+const STAT = { pending: "بالانتظار", applied: "انتنفّذ", rejected: "انرفض" };
+let DB = null, UID = null, lastDraft = "";
+function setMsg(t, cls) { const m = $("#sendmsg"); if (m) { m.textContent = t; m.className = "msg " + (cls || ""); } }
+function canSend(on, why) {
+  document.querySelectorAll("#b-send,#b-stop,#b-resume,.appr .btn").forEach(b => { b.disabled = !on; });
+  if (!on && why) { const i = $("#inbox"); if (i) i.innerHTML = `<div class="empty">${esc(why)}</div>`; }
+}
+async function send(kind, extra = {}) {
+  if (!DB) return false;
+  try {
+    await DB.collection("inbox").add({ kind, ...extra, status: "pending", at: new Date().toISOString(), by: UID || "" });
+    return true;
+  } catch (e) {
+    const t = e && e.code === "not_granted" ? "ما عندك صلاحية ترسل أوامر لهالمدينة." : "ما انحفظ الأمر. جرّب كمان شوي.";
+    setMsg(t, "err"); return false;
+  }
+}
+function renderApprovals() {
+  const box = $("#apprs");
+  if (!D.approvals.length) { box.innerHTML = '<div class="empty">ما في شي بانتظارك. أي أمر shell أو فعل خارجي بيطلع هون.</div>'; return; }
+  box.innerHTML = D.approvals.map(a => `<div class="appr" data-id="${esc(a.id)}"><div><b>${esc(a.action)}</b> <span class="empty">${esc(a.id)} · ${esc(a.agent)} @ ${esc(a.project)}</span></div><code>${esc(a.details)}</code>
+    <div class="hbtns"><button type="button" class="btn ok" data-act="approve">وافق</button><button type="button" class="btn no" data-act="deny">ارفض</button></div><div class="msg"></div></div>`).join("");
+  box.querySelectorAll(".appr .btn").forEach(b => b.addEventListener("click", async () => {
+    const card = b.closest(".appr"), id = card.dataset.id, act = b.dataset.act;
+    card.querySelectorAll(".btn").forEach(x => x.disabled = true);
+    const ok = await send(act, { approval: id });
+    card.querySelector(".msg").textContent = ok ? (act === "approve" ? "قرار الموافقة بالطابور." : "قرار الرفض بالطابور.") : "ما انحفظ القرار.";
+    if (!ok) card.querySelectorAll(".btn").forEach(x => x.disabled = false);
+  }));
+}
+renderApprovals();
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest("button"); if (!t) return;
+  if (t.id === "b-send") {
+    const ta = $("#cmdtext"), text = ta.value.trim();
+    if (text.length < 5) { setMsg("اكتب الأمر أول (5 حروف على الأقل).", "err"); return; }
+    t.disabled = true; setMsg("عم يرسل...");
+    if (await send("request", { text })) { ta.value = ""; lastDraft = ""; setMsg("وصل للصندوق. المدينة رح تستلمه بجولتها الجاية.", "ok"); }
+    t.disabled = false;
+  } else if (t.id === "b-stop" || t.id === "b-resume") {
+    const kind = t.id === "b-stop" ? "stop" : "resume";
+    t.disabled = true;
+    const ok = await send(kind);
+    t.textContent = ok ? (kind === "stop" ? "⛔ الإيقاف بالطابور" : "▶ الاستئناف بالطابور") : t.textContent;
+    if (!ok) t.disabled = false;
+  }
+});
+// keep a typed draft when the side panel re-renders on district change
+document.addEventListener("input", ev => { if (ev.target.id === "cmdtext") lastDraft = ev.target.value; });
+const _pick = pick; pick = k => { _pick(k); const ta = $("#cmdtext"); if (ta) ta.value = lastDraft; canSend(!!DB); };
+canSend(false);
+(async () => {
+  if (!(window.claude && claude.use)) { canSend(false, "الأزرار بتشتغل لما تفتح هالصفحة على claude.ai."); return; }
+  const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+  if (!db) { canSend(false, "الأوامر مش متاحة هون (لازم تكون مسجّل دخول وإلك صلاحية على الصفحة)."); return; }
+  DB = db; UID = user ? await user.id() : null;
+  const timer = setTimeout(() => { const i = $("#inbox"); if (i && i.textContent.includes("عم يحمّل")) i.innerHTML = '<div class="empty">ما قدرت أقرأ الصندوق هلأ.</div>'; }, 10000);
+  db.collection("inbox").orderBy("at", "desc").limit(25).onSnapshot(snap => {
+    clearTimeout(timer); canSend(true);
+    const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    $("#inbox").innerHTML = rows.length ? rows.map(c => `<div class="cmd"><div class="r"><b>${esc(KIND[c.kind] || c.kind)}</b>${c.text ? " · " + esc(c.text) : ""}${c.approval ? " · " + esc(c.approval) : ""}
+      <div class="note2">${esc((c.at || "").slice(0, 16).replace("T", " "))}${c.note ? " · " + esc(c.note) : ""}</div></div><span class="badge ${esc(c.status)}">${esc(STAT[c.status] || c.status)}</span></div>`).join("")
+      : '<div class="empty">ما في أوامر لسا. اكتب أمر بلوحة الحي أو اكبس زر.</div>';
+  }, e => { clearTimeout(timer); canSend(false, e && e.code === "not_granted" ? "ما عندك صلاحية تشوف صندوق الأوامر." : "ما قدرت أقرأ الصندوق هلأ."); });
+})();
 $("#lessons").innerHTML = D.lessons.map(l => `<li>${esc(l)}</li>`).join("") || "<li>لسا</li>";
 $("#skills").innerHTML = D.skills.map(l => `<li>${esc(l.slice(0, 120))}</li>`).join("");
 </script>

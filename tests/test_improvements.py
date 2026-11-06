@@ -211,3 +211,25 @@ assert "<script>alert(1)" not in h and "\\u003cscript\\u003ealert(1)" in h, "use
 assert "هيكل الشركة" in cityview.render_classic()
 assert "Agent City" in cityview.render() and "esc(" in cityview.render()
 print("CITY VIEW OK")
+
+# ---------- 9) أوامر صفحة المدينة (inbox-apply) ----------
+import subprocess
+def ia(cmd):
+    r = subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "..", "agentcity.py"), "inbox-apply", json.dumps(cmd)],
+                       capture_output=True, text=True, env={**os.environ})
+    return json.loads(r.stdout.strip().splitlines()[-1])
+r = ia({"kind": "request", "text": "جرّبوا أفكار على الفضة"})
+assert r["status"] == "applied" and "مشروع" in r["note"], r
+assert ia({"kind": "request", "text": "x"})["status"] == "rejected"
+assert ia({"kind": "approve", "approval": "nope"})["status"] == "rejected"
+assert ia({"kind": "hack"})["status"] == "rejected"
+assert ia({"kind": "stop"})["status"] == "applied" and store.killed()
+assert ia({"kind": "resume"})["status"] == "applied" and not store.killed()
+st = store.load()
+st["approvals"]["a77"] = {"id": "a77", "project": pid, "task": "t1", "agent": "engineer", "action": "shell", "details": "ls", "status": "pending", "used": False}
+store.save(st)
+assert ia({"kind": "deny", "approval": "a77"})["status"] == "applied"
+assert store.load()["approvals"]["a77"]["status"] == "denied"
+h = cityview.render()
+assert 'id="b-send"' in h and 'collection("inbox")' in h
+print("INBOX APPLY OK")
