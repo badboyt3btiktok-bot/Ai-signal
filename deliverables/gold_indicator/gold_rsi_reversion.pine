@@ -1,0 +1,22 @@
+//@version=5
+// Agent City - Gold (XAUUSD / GC) RSI Reversion  |  SIGNALS ONLY - no order execution.
+// Selected by a train/validation protocol; on the one-time FINAL TEST (2024-06 .. 2026-11) it made
+// +1.3% (Sharpe 0.11, max DD -20%) while buy & hold made +74.7%. NOT a reliable edge. Not financial advice.
+// Logic mirrors the Python backtest exactly: BUY when flat and RSI < low; SELL (go flat) when long and RSI > high.
+indicator("Agent City - Gold RSI Reversion (signals only)", overlay=true)
+period = input.int(20, "RSI period", minval=2)
+low    = input.int(40, "Buy below RSI")
+high   = input.int(70, "Sell above RSI")
+r = ta.rsi(close, period)
+var bool inPos = false
+buy  = barstate.isconfirmed and not inPos and r < low
+sell = barstate.isconfirmed and inPos and r > high
+if buy
+    inPos := true
+if sell
+    inPos := false
+bgcolor(inPos ? color.new(color.green, 92) : na, title="In position")
+plotshape(buy,  "BUY",  shape.triangleup,   location.belowbar, color.green, size=size.small, text="BUY")
+plotshape(sell, "SELL", shape.triangledown, location.abovebar, color.red,   size=size.small, text="SELL")
+alertcondition(buy,  "BUY",  "Gold RSI reversion: BUY signal (bar close)")
+alertcondition(sell, "SELL", "Gold RSI reversion: SELL signal (bar close)")
