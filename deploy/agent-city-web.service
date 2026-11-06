@@ -1,0 +1,21 @@
+[Unit]
+Description=Agent City web dashboard (localhost only; expose with: tailscale serve --bg 8787)
+After=network-online.target
+
+[Service]
+Type=simple
+User=agentcity
+Group=agentcity
+WorkingDirectory=/opt/agent-city
+EnvironmentFile=/etc/agent-city.env
+ExecStart=/opt/agent-city/.venv/bin/python agentcity.py web --host 127.0.0.1 --port 8787
+Restart=always
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/agent-city/city_home /var/lib/agentcity
+
+[Install]
+WantedBy=multi-user.target

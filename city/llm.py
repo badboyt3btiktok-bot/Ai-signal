@@ -73,6 +73,62 @@ class AnthropicBackend:
         return out
 
 
+class FileBackend:
+    """backend بدون API: كل طلب بينكتب بـ city_home/llm/inbox/N.json وبيستنى الرد بـ llm/outbox/N.json.
+    اللي بيرد ممكن يكون إنسان أو Claude Code بجلسة تفاعلية (python agentcity.py llm show / reply).
+    صيغة الرد: {"content": [{"type":"text","text":".."} | {"type":"tool_use","id":"..","name":"..","input":{..}}],
+                "stop_reason": "end_turn"|"tool_use"}"""
+
+    def __init__(self, timeout=None):
+        from . import store
+        self.store = store
+        self.dir = store.path("llm")
+        for d in ("inbox", "outbox", "done"):
+            os.makedirs(os.path.join(self.dir, d), exist_ok=True)
+        self.timeout = timeout or int(os.getenv("CITY_FILE_TIMEOUT", "7200"))
+
+    def _next(self):
+        p = os.path.join(self.dir, "seq")
+        n = int(open(p).read()) + 1 if os.path.exists(p) else 1
+        open(p, "w").write(str(n))
+        return n
+
+    def chat(self, system, messages, tools=None, max_tokens=None):
+        import time
+        n = self._next()
+        req = {"n": n, "system": system, "messages": messages, "tools": tools or []}
+        tmp = os.path.join(self.dir, "inbox", f"{n}.json.tmp")
+        json.dump(req, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        os.replace(tmp, os.path.join(self.dir, "inbox", f"{n}.json"))
+        out_p = os.path.join(self.dir, "outbox", f"{n}.json")
+        t0 = time.time()
+        while not os.path.exists(out_p):
+            if self.store.killed():
+                raise RuntimeError("STOP while waiting for LLM reply")
+            if time.time() - t0 > self.timeout:
+                raise TimeoutError(f"no reply for llm request {n}")
+            time.sleep(1)
+        time.sleep(0.2)
+        r = json.load(open(out_p, encoding="utf-8"))
+        os.replace(os.path.join(self.dir, "inbox", f"{n}.json"), os.path.join(self.dir, "done", f"{n}.req.json"))
+        os.replace(out_p, os.path.join(self.dir, "done", f"{n}.resp.json"))
+        out = Resp(stop_reason=r.get("stop_reason") or "end_turn")
+        for b in r.get("content", []):
+            if b.get("type") == "text" and b.get("text"):
+                out.text += b["text"]
+                out.blocks.append({"type": "text", "text": b["text"]})
+            elif b.get("type") == "tool_use":
+                b = {"type": "tool_use", "id": b.get("id") or f"f{n}_{len(out.blocks)}", "name": b["name"],
+                     "input": b.get("input") or {}}
+                out.blocks.append(b)
+                out.tool_calls.append({"id": b["id"], "name": b["name"], "input": b["input"]})
+        if out.tool_calls and out.stop_reason == "end_turn":
+            out.stop_reason = "tool_use"
+        # تقدير توكنز (≈4 حروف/توكن): الطلب كامل + الرد. ما في فاتورة حقيقية بهالوضع.
+        out.tokens = (len(json.dumps(req, ensure_ascii=False)) + len(json.dumps(r, ensure_ascii=False))) // 4
+        return out
+
+
 def set_backend(b):
     global _backend
     _backend = b
@@ -80,6 +136,8 @@ def set_backend(b):
 
 def get():
     global _backend
+    if _backend is None and os.getenv("CITY_BACKEND", "anthropic") == "file":
+        _backend = FileBackend()
     if _backend is None:
         if not (os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN")):
             raise SystemExit("لازم تحط ANTHROPIC_API_KEY بالبيئة.")

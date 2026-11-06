@@ -1,0 +1,520 @@
+{
+ "data_quality": {
+  "rows": 3017,
+  "start": "2014-11-06",
+  "end": "2026-11-05",
+  "nan": 0,
+  "non_positive": 0,
+  "largest_moves": {
+   "2026-01-30": 0.1078,
+   "2026-02-03": 0.0607,
+   "2020-03-24": 0.0595
+  }
+ },
+ "segments": {
+  "train": [
+   "2014-11-06",
+   "2022-01-19"
+  ],
+  "val": [
+   "2022-01-20",
+   "2024-06-12"
+  ],
+  "test": [
+   "2024-06-13",
+   "2026-11-05"
+  ]
+ },
+ "tried": 620,
+ "candidates": [
+  {
+   "name": "sma_cross_30_40",
+   "template": "sma_cross",
+   "params": {
+    "fast": 30,
+    "slow": 40
+   },
+   "train": {
+    "return": 0.5496,
+    "sharpe": 0.6,
+    "max_dd": -0.1666,
+    "trades": 33,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.1997,
+    "sharpe": 0.74,
+    "max_dd": -0.124,
+    "trades": 9,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.74 < 0.77)"
+    ]
+   }
+  },
+  {
+   "name": "sma_cross_35_40",
+   "template": "sma_cross",
+   "params": {
+    "fast": 35,
+    "slow": 40
+   },
+   "train": {
+    "return": 0.5325,
+    "sharpe": 0.58,
+    "max_dd": -0.17,
+    "trades": 44,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.0933,
+    "sharpe": 0.4,
+    "max_dd": -0.1465,
+    "trades": 9,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.4 < 0.77)"
+    ]
+   }
+  },
+  {
+   "name": "sma_cross_20_70",
+   "template": "sma_cross",
+   "params": {
+    "fast": 20,
+    "slow": 70
+   },
+   "train": {
+    "return": 0.5018,
+    "sharpe": 0.56,
+    "max_dd": -0.1178,
+    "trades": 16,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.1876,
+    "sharpe": 0.66,
+    "max_dd": -0.1296,
+    "trades": 4,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "عدد صفقات قليل على التحقق (4 < 5)",
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.66 < 0.77)"
+    ]
+   }
+  },
+  {
+   "name": "sma_cross_25_50",
+   "template": "sma_cross",
+   "params": {
+    "fast": 25,
+    "slow": 50
+   },
+   "train": {
+    "return": 0.4325,
+    "sharpe": 0.49,
+    "max_dd": -0.1589,
+    "trades": 18,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.1576,
+    "sharpe": 0.6,
+    "max_dd": -0.1223,
+    "trades": 6,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.6 < 0.77)"
+    ]
+   }
+  },
+  {
+   "name": "sma_cross_20_80",
+   "template": "sma_cross",
+   "params": {
+    "fast": 20,
+    "slow": 80
+   },
+   "train": {
+    "return": 0.4092,
+    "sharpe": 0.48,
+    "max_dd": -0.1178,
+    "trades": 15,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.3013,
+    "sharpe": 0.96,
+    "max_dd": -0.1144,
+    "trades": 2,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "عدد صفقات قليل على التحقق (2 < 5)"
+    ]
+   }
+  },
+  {
+   "name": "rsi_reversion_5_15_85",
+   "template": "rsi_reversion",
+   "params": {
+    "period": 5,
+    "low": 15,
+    "high": 85
+   },
+   "train": {
+    "return": 0.9726,
+    "sharpe": 1.12,
+    "max_dd": -0.0786,
+    "trades": 13,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.1422,
+    "sharpe": 0.73,
+    "max_dd": -0.082,
+    "trades": 4,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "عدد صفقات قليل على التحقق (4 < 5)",
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.73 < 0.77)"
+    ]
+   }
+  },
+  {
+   "name": "rsi_reversion_5_15_80",
+   "template": "rsi_reversion",
+   "params": {
+    "period": 5,
+    "low": 15,
+    "high": 80
+   },
+   "train": {
+    "return": 0.817,
+    "sharpe": 1.11,
+    "max_dd": -0.0786,
+    "trades": 17,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.1224,
+    "sharpe": 0.84,
+    "max_dd": -0.0616,
+    "trades": 6,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": true,
+    "reasons": []
+   }
+  },
+  {
+   "name": "rsi_reversion_20_40_70",
+   "template": "rsi_reversion",
+   "params": {
+    "period": 20,
+    "low": 40,
+    "high": 70
+   },
+   "train": {
+    "return": 1.2253,
+    "sharpe": 1.05,
+    "max_dd": -0.1442,
+    "trades": 10,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.2986,
+    "sharpe": 0.99,
+    "max_dd": -0.1304,
+    "trades": 2,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "عدد صفقات قليل على التحقق (2 < 5)"
+    ]
+   }
+  },
+  {
+   "name": "rsi_reversion_15_40_55",
+   "template": "rsi_reversion",
+   "params": {
+    "period": 15,
+    "low": 40,
+    "high": 55
+   },
+   "train": {
+    "return": 0.7009,
+    "sharpe": 0.97,
+    "max_dd": -0.1095,
+    "trades": 30,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.0452,
+    "sharpe": 0.27,
+    "max_dd": -0.1206,
+    "trades": 7,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "أداء ضعيف على بيانات التحقق",
+     "اشتباه Overfitting: التحقق أضعف بكثير من التدريب",
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.27 < 0.77)"
+    ]
+   }
+  },
+  {
+   "name": "rsi_reversion_15_35_60",
+   "template": "rsi_reversion",
+   "params": {
+    "period": 15,
+    "low": 35,
+    "high": 60
+   },
+   "train": {
+    "return": 0.6383,
+    "sharpe": 0.94,
+    "max_dd": -0.098,
+    "trades": 15,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.0912,
+    "sharpe": 0.53,
+    "max_dd": -0.0935,
+    "trades": 5,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.53 < 0.77)"
+    ]
+   }
+  },
+  {
+   "name": "breakout_10_60",
+   "template": "breakout",
+   "params": {
+    "entry": 10,
+    "exit": 60
+   },
+   "train": {
+    "return": 0.4881,
+    "sharpe": 0.48,
+    "max_dd": -0.1935,
+    "trades": 17,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.1731,
+    "sharpe": 0.56,
+    "max_dd": -0.1997,
+    "trades": 7,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.56 < 0.77)"
+    ]
+   }
+  },
+  {
+   "name": "breakout_10_55",
+   "template": "breakout",
+   "params": {
+    "entry": 10,
+    "exit": 55
+   },
+   "train": {
+    "return": 0.2826,
+    "sharpe": 0.33,
+    "max_dd": -0.1935,
+    "trades": 20,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.1844,
+    "sharpe": 0.59,
+    "max_dd": -0.1921,
+    "trades": 7,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.59 < 0.77)"
+    ]
+   }
+  },
+  {
+   "name": "breakout_20_60",
+   "template": "breakout",
+   "params": {
+    "entry": 20,
+    "exit": 60
+   },
+   "train": {
+    "return": 0.2769,
+    "sharpe": 0.33,
+    "max_dd": -0.2182,
+    "trades": 15,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.1674,
+    "sharpe": 0.56,
+    "max_dd": -0.1884,
+    "trades": 5,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.56 < 0.77)"
+    ]
+   }
+  },
+  {
+   "name": "breakout_30_60",
+   "template": "breakout",
+   "params": {
+    "entry": 30,
+    "exit": 60
+   },
+   "train": {
+    "return": 0.2596,
+    "sharpe": 0.32,
+    "max_dd": -0.238,
+    "trades": 13,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.2095,
+    "sharpe": 0.7,
+    "max_dd": -0.1749,
+    "trades": 3,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "عدد صفقات قليل على التحقق (3 < 5)",
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.7 < 0.77)"
+    ]
+   }
+  },
+  {
+   "name": "breakout_30_55",
+   "template": "breakout",
+   "params": {
+    "entry": 30,
+    "exit": 55
+   },
+   "train": {
+    "return": 0.1547,
+    "sharpe": 0.23,
+    "max_dd": -0.238,
+    "trades": 14,
+    "buy_hold": 0.6136,
+    "bh_sharpe": 0.52,
+    "bh_max_dd": -0.1921
+   },
+   "val": {
+    "return": 0.2211,
+    "sharpe": 0.73,
+    "max_dd": -0.1671,
+    "trades": 3,
+    "buy_hold": 0.278,
+    "bh_sharpe": 0.77,
+    "bh_max_dd": -0.2018
+   },
+   "risk": {
+    "passed": false,
+    "reasons": [
+     "عدد صفقات قليل على التحقق (3 < 5)",
+     "ما بتتفوق على الشراء والاحتفاظ على التحقق (Sharpe 0.73 < 0.77)"
+    ]
+   }
+  }
+ ]
+}

@@ -15,5 +15,10 @@ def evaluate(close: pd.Series, pos: pd.Series, i: int, j: int) -> dict:
     dd = float((eq / eq.cummax() - 1).min())
     trades = int(changes.iloc[i:j].sum() // 2)
     bh = float(close.iloc[j - 1] / close.iloc[i] - 1)
+    b_ = ret.iloc[i:j]                        # المقارنة: شراء واحتفاظ بنفس الفترة (benchmark)
+    bsd = b_.std()
+    bh_sharpe = float(b_.mean() / bsd * np.sqrt(252)) if bsd and bsd > 0 else 0.0
+    beq = (1 + b_).cumprod()
     return {"return": round(float(eq.iloc[-1] - 1), 4), "sharpe": round(sharpe, 2),
-            "max_dd": round(dd, 4), "trades": trades, "buy_hold": round(bh, 4)}
+            "max_dd": round(dd, 4), "trades": trades, "buy_hold": round(bh, 4),
+            "bh_sharpe": round(bh_sharpe, 2), "bh_max_dd": round(float((beq / beq.cummax() - 1).min()), 4)}

@@ -1,0 +1,1 @@
+{"strategy": "rsi_reversion", "params": {"period": 20, "low": 40, "high": 70}, "test": {"return": 0.0127, "sharpe": 0.11, "max_dd": -0.201, "trades": 1, "buy_hold": 0.7746}, "check": {"passed": true, "reasons": []}}

@@ -92,11 +92,18 @@ plotshape(ta.crossunder(fast, slow), "SELL", shape.triangledown, location.aboveb
 alertcondition(ta.crossover(fast, slow), "BUY", "Gold BUY signal")
 alertcondition(ta.crossunder(fast, slow), "SELL", "Gold SELL signal")
 """,
+    # نفس منطق signal() بالظبط: حالة مركز (var inPos)، فما في إشارة شراء وانت بمركز.
     "rsi_reversion": """//@version=5
 indicator("Gold City - RSI Reversion", overlay=true)
 r = ta.rsi(close, {period})
-buy = ta.crossunder(r, {low})
-sell = ta.crossover(r, {high})
+var bool inPos = false
+buy = barstate.isconfirmed and not inPos and r < {low}
+sell = barstate.isconfirmed and inPos and r > {high}
+if buy
+    inPos := true
+if sell
+    inPos := false
+bgcolor(inPos ? color.new(color.green, 92) : na)
 plotshape(buy, "BUY", shape.triangleup, location.belowbar, color.green, size=size.small)
 plotshape(sell, "SELL", shape.triangledown, location.abovebar, color.red, size=size.small)
 alertcondition(buy, "BUY", "Gold BUY signal")
@@ -106,14 +113,19 @@ alertcondition(sell, "SELL", "Gold SELL signal")
 indicator("Gold City - Breakout", overlay=true)
 hi = ta.highest(close, {entry})[1]
 lo = ta.lowest(close, {exit})[1]
-buy = close > hi
-sell = close < lo
+var bool inPos = false
+buy = barstate.isconfirmed and not inPos and close > hi
+sell = barstate.isconfirmed and inPos and close < lo
+if buy
+    inPos := true
+if sell
+    inPos := false
 plot(hi, color=color.green)
 plot(lo, color=color.red)
-plotshape(buy and not buy[1], "BUY", shape.triangleup, location.belowbar, color.green, size=size.small)
-plotshape(sell and not sell[1], "SELL", shape.triangledown, location.abovebar, color.red, size=size.small)
-alertcondition(buy and not buy[1], "BUY", "Gold BUY signal")
-alertcondition(sell and not sell[1], "SELL", "Gold SELL signal")
+plotshape(buy, "BUY", shape.triangleup, location.belowbar, color.green, size=size.small)
+plotshape(sell, "SELL", shape.triangledown, location.abovebar, color.red, size=size.small)
+alertcondition(buy, "BUY", "Gold BUY signal")
+alertcondition(sell, "SELL", "Gold SELL signal")
 """,
 }
 
