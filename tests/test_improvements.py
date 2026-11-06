@@ -174,3 +174,20 @@ st = json.loads(req("/api/state", headers={"X-City-Token": "tok-123"})[1])
 assert any(p.get("integrity") for p in st["projects"]), "integrity warnings exposed to owner"
 srv.shutdown()
 print("ALL IMPROVEMENT TESTS PASSED")
+
+# ---------- 6) FileBackend: المدينة بدون API (الرد بييجي من ملف) ----------
+import threading as _th, time as _time
+from city import llm
+fb = llm.FileBackend(timeout=20)
+def _answer():
+    d = os.path.join(fb.dir, "inbox")
+    while not os.listdir(d):
+        _time.sleep(0.1)
+    n = sorted(os.listdir(d))[0].split(".")[0]
+    json.dump({"content": [{"type": "text", "text": "ok"}, {"type": "tool_use", "name": "list_files", "input": {}}]},
+              open(os.path.join(fb.dir, "outbox", f"{n}.json"), "w"))
+_th.Thread(target=_answer, daemon=True).start()
+r = fb.chat("You are x", [{"role": "user", "content": "hi"}], [])
+assert r.text == "ok" and r.tool_calls[0]["name"] == "list_files" and r.stop_reason == "tool_use" and r.tokens > 0
+assert r.tool_calls[0]["id"], "tool_use id generated"
+print("FILE BACKEND OK")

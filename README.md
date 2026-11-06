@@ -29,6 +29,16 @@ python tests/test_api_contract.py # اختبار توافق مع قواعد Clau
 ```
 كل شغل الايجنت بمجلد `city_home/workspace/<project>/`، والمهارات بـ `city_home/skills/`.
 
+## بدون API: `CITY_BACKEND=file`
+المدينة بتكتب كل طلب LLM بـ `city_home/llm/inbox/N.json` وبتستنى الرد بـ `llm/outbox/N.json`.
+اللي بيرد ممكن يكون Claude Code بجلسة تفاعلية (أو إنسان):
+```
+CITY_BACKEND=file python agentcity.py run &      # المدينة بتشتغل وبتستنى
+python agentcity.py llm show                      # اعرض أول طلب معلّق
+python agentcity.py llm reply --file reply.json   # {"content":[{"type":"text",..}|{"type":"tool_use","name":..,"input":{..}}]}
+```
+التوكنز بهالوضع تقدير (≈4 حروف/توكن) وما في فاتورة API. QA "المستقل" هون نفس العقل اللي اشتغل، فاستقلاليته أضعف.
+
 ## متغيرات
 `CITY_MODEL` (الافتراضي claude-sonnet-5-5)، `CITY_TOKEN_BUDGET` (600000 لكل مشروع، بينفرض حتى جوا المهمة)، `CITY_OWNER_LANG`،
 `CITY_EFFORT` (medium)، `CITY_MAX_TOKENS` (16000)، `CITY_FALLBACKS` (1 = تحويل تلقائي لنموذج ثاني عند الرفض، 0 لإيقافه)، `CITY_RUN_TIMEOUT` (300 ثانية).

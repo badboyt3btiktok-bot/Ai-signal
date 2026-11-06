@@ -16,6 +16,9 @@ sub.add_parser("stop", help="مفتاح إيقاف طوارئ"); sub.add_parser(
 sub.add_parser("sandbox", help="ابني صورة Docker لعزل كود الايجنت")
 dd = sub.add_parser("data", help="نزّل بيانات الذهب الحقيقية (GC=F) وجمّدها لكل الفريق")
 dd.add_argument("--refresh", action="store_true", help="تحديث النسخة المجمّدة (بيغيّر train/val/test لأي مشروع شغال!)")
+L = sub.add_parser("llm", help="وضع CITY_BACKEND=file: اعرض الطلبات المعلقة أو رد عليها")
+L.add_argument("action", choices=["show", "reply"]); L.add_argument("n", nargs="?", type=int)
+L.add_argument("--file"); L.add_argument("--full", action="store_true")
 w = sub.add_parser("web", help="واجهة ويب للمراقبة والموافقات من الموبايل")
 w.add_argument("--host", default="127.0.0.1"); w.add_argument("--port", type=int, default=8787)
 args = p.parse_args()
@@ -34,6 +37,36 @@ if args.cmd == "data":
     from gold_toolkit import data
     s = data.from_yahoo(refresh=args.refresh)
     sys.exit(print(f"{len(s)} يوم ({s.index[0].date()} -> {s.index[-1].date()}) محفوظة بـ {data.CACHE}"))
+if args.cmd == "llm":
+    import glob, json, os
+    store.init(); d = store.path("llm")
+    pend = sorted(int(os.path.basename(f)[:-5]) for f in glob.glob(os.path.join(d, "inbox", "*.json")))
+    if args.action == "show":
+        if not pend:
+            sys.exit(print("(ما في طلبات معلقة)"))
+        n = args.n or pend[0]
+        r = json.load(open(os.path.join(d, "inbox", f"{n}.json"), encoding="utf-8"))
+        sysl = r["system"].splitlines()
+        print(f"=== request {n} | {sysl[0][:160]} | tools: {[t['name'] for t in r['tools']]} | msgs={len(r['messages'])}")
+        if args.full:
+            print(r["system"])
+        msgs = r["messages"] if args.full or len(r["messages"]) <= 2 else r["messages"][-1:]
+        for m in msgs:
+            cs = m["content"] if isinstance(m["content"], list) else [{"type": "text", "text": m["content"]}]
+            for c in cs:
+                if c["type"] == "text":
+                    print(f"[{m['role']}] {c['text'][:6000]}")
+                elif c["type"] == "tool_use":
+                    print(f"[{m['role']} tool_use {c['id']}] {c['name']} {json.dumps(c['input'], ensure_ascii=False)[:1500]}")
+                elif c["type"] == "tool_result":
+                    print(f"[tool_result {c['tool_use_id']}{' ERROR' if c.get('is_error') else ''}] {str(c['content'])[:5000]}")
+        sys.exit()
+    n = args.n or (pend[0] if pend else None)
+    body = open(args.file, encoding="utf-8").read() if args.file else sys.stdin.read()
+    json.loads(body)
+    tmp = os.path.join(d, "outbox", f"{n}.json.tmp")
+    open(tmp, "w", encoding="utf-8").write(body); os.replace(tmp, os.path.join(d, "outbox", f"{n}.json"))
+    sys.exit(print(f"replied {n}"))
 if args.cmd == "web":
     from city import web
     sys.exit(web.serve(args.host, args.port))
