@@ -239,3 +239,26 @@ assert store.load()["approvals"]["a77"]["status"] == "denied"
 h = cityview.render()
 assert 'id="b-send"' in h and 'collection("inbox")' in h
 print("INBOX APPLY OK")
+
+# ---------- 10) Docker رجع بنص الجولة + مهمة عالقة "running" ----------
+import time as _t
+sandbox._ready, sandbox._checked = False, _t.time() - 60      # كان "مش متاح" من دقيقة
+calls = []
+_orig = sandbox.subprocess.run
+sandbox.subprocess.run = lambda *a, **k: (calls.append(a[0]), type("R", (), {"returncode": 0})())[1]
+assert sandbox.available() is True and calls, "negative result must be re-checked"
+sandbox.subprocess.run = _orig; sandbox.available(refresh=True)
+c3 = City(); pid9 = c3.add_request("stuck task test"); P9 = c3.st["projects"][pid9]
+P9["tasks"] = [{"id": "t1", "title": "x", "description": "", "role": "engineer", "deps": [], "status": "running",
+                "attempts": 1, "output": "", "feedback": "", "agent": "engineer"}]
+c3.st["projects"][pid9]["status"] = "queued"; c3.save()
+class _Stop(Exception): pass
+import city.city as _cc
+_orig_exec = _cc.City.exec_task
+_cc.City.exec_task = lambda self, P, t: (_ for _ in ()).throw(_Stop()) if t["status"] != "pending" else setattr(self, "_seen", t["status"]) or t.update(status="done")
+_orig_finish = _cc.City.finish
+_cc.City.finish = lambda self, P: P.update(status="done")
+c3.run_project(pid9)
+_cc.City.exec_task, _cc.City.finish = _orig_exec, _orig_finish
+assert getattr(c3, "_seen", None) == "pending" and P9["tasks"][0]["attempts"] == 0, "stuck running task must be reset to pending"
+print("RECOVERY CHECKS OK")

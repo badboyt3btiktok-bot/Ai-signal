@@ -229,6 +229,10 @@ class City:
         P = self.st["projects"][pid]
         if not P["tasks"]:
             self.plan(P)
+        for t in P["tasks"]:                     # مهمة علقت "running" لأن العملية انقتلت فجأة (في مشغّل واحد بس)
+            if t["status"] == "running":
+                t["status"], t["attempts"] = "pending", max(0, t["attempts"] - 1)
+                store.audit("task_reset", project=P["id"], task=t["id"])
         P["status"], P["errors"] = "running", 0
         self.save()
         while True:

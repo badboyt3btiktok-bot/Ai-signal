@@ -14,10 +14,16 @@ def mode():
     return os.getenv("CITY_SANDBOX", "auto").lower()
 
 
+_checked = 0.0
+
+
 def available(refresh=False):
-    """Docker شغال والصورة موجودة؟"""
-    global _ready
-    if _ready is None or refresh:
+    """Docker شغال والصورة موجودة؟ النتيجة السلبية ما بتنحفظ للأبد: بنعيد الفحص كل 30 ثانية
+    (لو Docker رجع يشتغل بنص الجولة، الكود الجاي بيرجع ينعزل)."""
+    global _ready, _checked
+    import time
+    if _ready is None or refresh or (not _ready and time.time() - _checked > 30):
+        _checked = time.time()
         try:
             _ready = bool(shutil.which("docker")) and subprocess.run(
                 ["docker", "image", "inspect", IMAGE], capture_output=True, timeout=20).returncode == 0

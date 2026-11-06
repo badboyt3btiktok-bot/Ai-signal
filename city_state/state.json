@@ -157,6 +157,44 @@
    "summary": "جولة البحث الأولى خلصت. الفريق اخترع 3 أفكار جديدة وقدّمها للمختبر مرة وحدة لكل فكرة. فكرة 'شراء النزلة بالترند الصاعد' عدّت فحص المخاطر (Sharpe تحقق 0.88 مقابل 0.77 للشراء والاحتفاظ، 18 صفقة) ودخلت اختبار المستقبل؛ التانيتين انرفضوا. هاد مش دليل ربح لسا: الحكم الحقيقي على الأيام الجاية، وبدنا شي 60 يوم. السجل: city_home/workspace/p3/research_log.md",
    "cost_usd": 0.0,
    "errors": 0
+  },
+  "p4": {
+   "id": "p4",
+   "request": "ركّبلي الانديكيتور على MT5 (طلب المالك من صفحة المدينة: rakble el indicator 3la mt5). إشارات فقط، بدون تنفيذ صفقات.",
+   "status": "done",
+   "tasks": [
+    {
+     "id": "t1",
+     "title": "MT5 indicator (MQL5) + logic parity check",
+     "description": "Port the Strategy Lab's current forward-test candidate dip_in_uptrend (workspace/p3/ideas/dip_in_uptrend.py; lab params T=100, x=0.03, E=20) to an MT5 *indicator* GoldDipInUptrend.mq5: SIGNALS ONLY (buy/sell arrows on the chart, optional alerts/push), no trading functions at all (no OrderSend/CTrade/PositionOpen). Inputs T, x, E, alerts. Closed-bar logic only (no repaint): uptrend = close > SMA(T); entry when flat and close <= highest close of last 20 bars * (1-x); exit when close > SMA(E) and close > previous close, or uptrend ends. Header comment with an honest warning (unproven, in forward test). Also write mq5_sim.py: a Python re-implementation of the MQL5 loop exactly as written, and compare its positions with the lab module on the frozen GC=F data (report mismatches). MetaEditor is not available here, so the .mq5 cannot be compiled in this environment: say so.",
+     "role": "engineer",
+     "deps": [],
+     "status": "done",
+     "attempts": 1,
+     "output": "Done. GoldDipInUptrend.mq5: MT5 indicator, signals only (BUY/SELL arrows, optional popup/push alert once per new closed-bar signal), no trading functions. Inputs T=100, x=0.03, E=20. Closed bars only, so no repainting. mq5_sim.py re-implements the MQL5 loop line by line: 0 mismatches vs the lab module on 3017 frozen GC=F daily bars (112 entries/exits). Caveats: MetaEditor is not available here, so the .mq5 was NOT compiled in this environment; signals on a broker XAUUSD feed can differ from GC=F futures data. This step ran without the Docker sandbox (Docker daemon was down after a machine change); the code run was mq5_sim.py only.",
+     "feedback": "",
+     "agent": "engineer"
+    },
+    {
+     "id": "t2",
+     "title": "Install guide for MT5 (Arabic)",
+     "description": "Write INSTALL_MT5.md in Levantine Arabic: step by step (MetaEditor -> new indicator / paste, compile F7, attach to XAUUSD D1 chart, inputs, enabling alerts/push notifications), what the arrows mean, honest status of the strategy (forward test just started; validation was seen before), and that it is signals only, not financial advice.",
+     "role": "writer",
+     "deps": [
+      "t1"
+     ],
+     "status": "done",
+     "attempts": 1,
+     "output": "Wrote INSTALL_MT5.md (Arabic): what the arrows mean, 6 install steps (MetaEditor, compile F7, attach to XAUUSD D1), inputs table, mobile push setup, honest status of the strategy.",
+     "feedback": "",
+     "agent": "writer"
+    }
+   ],
+   "tokens": 18141,
+   "created": "2026-11-06T12:05:32",
+   "summary": "جهّزنالك مؤشر MT5 اسمه GoldDipInUptrend: إشارات شراء وبيع بس، بدون أي تنفيذ صفقات. اخترنا استراتيجية 'شراء النزلة بالترند الصاعد' لأنها الوحيدة اللي عم تنختبر هلأ على المستقبل؛ المؤشر القديم (RSI) فشل فما ركّبناه. منطق المؤشر مطابق للمختبر 100% (صفر اختلاف على 3017 يوم)، بس ما قدرنا نعمله Compile هون، فأول مرة اكبس F7 بـ MetaEditor وابعتلنا أي خطأ. الملفات: GoldDipInUptrend.mq5 ودليل التركيب INSTALL_MT5.md. تذكير: لسا مش مثبتة إنها بتربح.",
+   "cost_usd": 0.0,
+   "errors": 0
   }
  },
  "agents": {
@@ -244,7 +282,9 @@
   "QA should check every headline number in reports against the result JSON automatically.",
   "Momentum alone did not beat buy & hold on gold validation; combine trend with an entry timing rule instead.",
   "Volatility-squeeze breakouts failed badly on gold 2022-2024; do not retry without a new, independent reason.",
-  "Check minimum-trade feasibility before submitting (calendar rules cannot reach 10 train trades)."
+  "Check minimum-trade feasibility before submitting (calendar rules cannot reach 10 train trades).",
+  "When porting a strategy to another platform, re-implement the target code loop in Python and diff positions against the lab module (0 mismatches before shipping).",
+  "Check that the Docker sandbox is up at the start of every run; CITY_SANDBOX=docker for scheduled runs so it never silently falls back."
  ],
- "seq": 3
+ "seq": 4
 }

@@ -65,3 +65,15 @@
 {"t": "2026-11-06 07:52:05", "event": "tool", "agent": "qa", "project": "p3", "task": "t3-qa", "tool": "run_python", "error": false}
 {"t": "2026-11-06 07:52:10", "event": "task", "project": "p3", "task": "t3", "agent": "writer", "status": "done", "tokens": 9186}
 {"t": "2026-11-06 12:00:25", "event": "resume", "via": "page"}
+{"t": "2026-11-06 12:05:32", "event": "resume", "via": "page"}
+{"t": "2026-11-06 12:05:32", "event": "request", "project": "p4", "text": "ركّبلي الانديكيتور على MT5 (طلب المالك من صفحة المدينة: rakble el indicator 3la mt5). إشارات فقط، بدون تنفيذ صفقات."}
+{"t": "2026-11-06 12:05:59", "event": "planned", "project": "p4", "tasks": [["t1", "engineer"], ["t2", "writer"]]}
+{"t": "2026-11-06 12:06:41", "event": "tool", "agent": "engineer", "project": "p4", "task": "t1", "tool": "write_file", "error": false}
+{"t": "2026-11-06 12:06:41", "event": "tool", "agent": "engineer", "project": "p4", "task": "t1", "tool": "write_file", "error": false}
+{"t": "2026-11-06 12:06:41", "event": "sandbox_unavailable", "mode": "auto"}
+{"t": "2026-11-06 12:06:41", "event": "tool", "agent": "engineer", "project": "p4", "task": "t1", "tool": "run_python", "error": false}
+{"t": "2026-11-06 12:07:32", "event": "tool", "agent": "qa", "project": "p4", "task": "t1-qa", "tool": "run_python", "error": false}
+{"t": "2026-11-06 12:07:45", "event": "task", "project": "p4", "task": "t1", "agent": "engineer", "status": "done", "tokens": 10321}
+{"t": "2026-11-06 12:08:06", "event": "tool", "agent": "writer", "project": "p4", "task": "t2", "tool": "write_file", "error": false}
+{"t": "2026-11-06 12:08:20", "event": "tool", "agent": "qa", "project": "p4", "task": "t2-qa", "tool": "run_python", "error": false}
+{"t": "2026-11-06 12:08:36", "event": "task", "project": "p4", "task": "t2", "agent": "writer", "status": "done", "tokens": 6311}
