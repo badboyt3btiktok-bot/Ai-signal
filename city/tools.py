@@ -1,6 +1,6 @@
 """أدوات الايجنت. كل ايجنت بياخد فقط الأدوات المسموحة لدوره. الأفعال الخطرة (shell) لازم موافقتك."""
 import os, re, subprocess, sys, urllib.request
-from . import store
+from . import sandbox, store
 
 
 class Ctx:
@@ -57,13 +57,43 @@ def _env(ctx):
     return env
 
 
-def _exec(cmd, ctx, timeout=int(os.getenv("CITY_RUN_TIMEOUT", "300")), shell=False):
+TIMEOUT = int(os.getenv("CITY_RUN_TIMEOUT", "300"))
+_warned = False
+
+
+def _exec(argv, ctx, timeout=None, shell=False):
+    """argv = أمر مكتوب بمسارات الحاوية (/work, /shared). Docker إذا متاح، وإلا محلي (مع تحذير)."""
+    global _warned
+    timeout = timeout or TIMEOUT
+    shared = os.path.join(ctx.root, "shared")
+    if sandbox.use_docker():
+        code, out = sandbox.run(["sh", "-c", argv] if shell else argv, ctx.workdir, shared, timeout)
+        return out if code is None else f"exit={code}\n{out[-6000:]}"
+    note = ""
+    if not _warned:
+        _warned = True
+        store.audit("sandbox_unavailable", mode=sandbox.mode())
+        note = "[warning: running WITHOUT Docker sandbox]\n"
+    host = {"/work": ctx.workdir, "/shared": shared}
+    if shell:
+        cmd = argv
+    else:
+        cmd = [sys.executable if a == "python" else next(
+            (h + a[len(k):] for k, h in host.items() if a == k or a.startswith(k + "/")), a) for a in argv]
     try:
         r = subprocess.run(cmd, cwd=ctx.workdir, capture_output=True, text=True,
                            timeout=timeout, env=_env(ctx), shell=shell)
-        return f"exit={r.returncode}\n{(r.stdout + r.stderr)[-6000:]}"
+        return f"{note}exit={r.returncode}\n{(r.stdout + r.stderr)[-6000:]}"
     except subprocess.TimeoutExpired:
         return "ERROR: timeout"
+
+
+def _in_box(ctx, full):
+    """مسار بالحاوية للملف: مجلد المشروع -> /work، المكتبات المشتركة -> /shared."""
+    for root, mnt in ((ctx.workdir, "/work"), (os.path.join(ctx.root, "shared"), "/shared")):
+        if full == root or full.startswith(root + os.sep):
+            return mnt + full[len(root):].replace(os.sep, "/")
+    raise PermissionError("run_python بيشغّل بس ملفات من مجلد مشروعك أو shared/")
 
 
 def run_python(ctx, a):
@@ -72,7 +102,7 @@ def run_python(ctx, a):
         open(target, "w", encoding="utf-8").write(a["code"])
     else:
         target = _safe(ctx, a["path"])
-    return _exec([sys.executable, target], ctx)
+    return _exec(["python", _in_box(ctx, target)], ctx)
 
 
 def fetch_url(ctx, a):

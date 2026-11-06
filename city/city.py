@@ -1,5 +1,5 @@
 """قلب المدينة: المدير (CEO) + HR (توظيف تلقائي) + مراجعة QA + تعافي ذاتي + ذاكرة دروس."""
-import datetime, json, os, re, time
+import datetime, hashlib, json, os, re, time
 from . import llm, store, tools
 from .agent import Agent
 
@@ -20,6 +20,24 @@ class City:
     def __init__(self):
         store.init()
         self.st = store.load()
+        if not store.runner_alive():
+            self.apply_inbox()
+
+    def apply_inbox(self):
+        """طبّق الأوامر اللي وصلت من الويب/CLI (موافقات، رفض، طلبات جديدة)."""
+        done = 0
+        for it in store.drain():
+            try:
+                if it["kind"] == "request":
+                    self.add_request(it["text"])
+                elif it["kind"] == "decision":
+                    self.decide(it["id"], bool(it["ok"]))
+                done += 1
+            except Exception as e:
+                store.audit("inbox_error", item=it, error=str(e)[:300])
+        if done:
+            self.save()
+        return done
 
     def save(self):
         store.save(self.st)
@@ -154,11 +172,26 @@ class City:
             store.audit("task_error", project=P["id"], task=t["id"], error=f"{type(e).__name__}: {e}"[:500])
             raise
         finally:
+            self.watch_final_lock(P)
             self._task_t0 = None
             P["tokens"] += llm.TOTAL - before
             P["cost_usd"] = round(P.get("cost_usd", 0) + llm.COST - c0, 4)
             store.audit("task", project=P["id"], task=t["id"], agent=t["agent"], status=t["status"],
                         tokens=llm.TOTAL - before)
+
+    def watch_final_lock(self, P):
+        """final_test.lock لازم ينكتب مرة وحدة وما يتغير. أي حذف/تعديل = مخالفة نزاهة (بتنسجّل وبتطلع بالتقرير)."""
+        f = store.path("workspace", P["id"], "final_test.lock")
+        h = hashlib.sha256(open(f, "rb").read()).hexdigest() if os.path.exists(f) else None
+        old = P.get("final_lock")
+        if old is None and h:
+            P["final_lock"] = h
+            store.audit("final_test_opened", project=P["id"], content=open(f, encoding="utf-8").read()[:2000])
+        elif old and h != old:
+            msg = "final_test.lock deleted" if h is None else "final_test.lock modified"
+            P.setdefault("integrity", []).append(f"{now()} {msg}: final test may have been reopened")
+            store.audit("integrity_violation", project=P["id"], detail=msg)
+            P["final_lock"] = h or old
 
     def _exec_task(self, P, t):
         t["agent"] = self.ensure_agent(t["role"], t)
@@ -204,6 +237,7 @@ class City:
             if P.get("errors", 0) >= MAX_ERRORS:
                 P["status"] = "paused_error"     # أخطاء متتالية (API/شبكة): run يدوي بيستأنف
                 break
+            self.apply_inbox()                       # موافقات وصلت وقت الشغل
             ready = [t for t in P["tasks"] if t["status"] == "pending"
                      and all(self._t(P, d)["status"] == "done" for d in t["deps"])]
             if not ready:
@@ -237,12 +271,17 @@ class City:
         except Exception:
             P["summary"] = digest
         P["status"] = "done"
+        warn = "".join(f"\n- ⚠️ {x}" for x in P.get("integrity", []))
+        if warn:
+            P["summary"] += "\n\nتحذيرات نزاهة (من المدينة، مش من الايجنت):" + warn
         open(store.path("workspace", P["id"], "REPORT.md"), "w", encoding="utf-8").write(
             f"# {P['request']}\n\n{P['summary']}\n")
 
     # ---------- موافقات المالك ----------
     def decide(self, aid, ok):
-        a = self.st["approvals"][aid]
+        a = self.st["approvals"].get(aid)
+        if not a or a["status"] != "pending":
+            raise ValueError(f"no pending approval {aid}")
         a["status"] = "approved" if ok else "denied"
         P = self.st["projects"][a["project"]]
         t = self._t(P, a["task"])
@@ -255,7 +294,17 @@ class City:
         store.audit("approval", id=aid, approved=ok)
 
     # ---------- التشغيل المستمر ----------
-    def run_all(self, resume=("queued", "paused_stop", "paused_budget", "paused_error")):
+    def run_all(self, resume=("queued", "paused_stop", "paused_budget", "paused_error"), claim=True):
+        if claim:
+            store.claim_runner()
+        try:
+            self._run_all(resume)
+        finally:
+            if claim:
+                store.release_runner()
+
+    def _run_all(self, resume):
+        self.apply_inbox()
         for pid, P in list(self.st["projects"].items()):
             if P["status"] in resume:
                 try:
@@ -268,8 +317,13 @@ class City:
 
     def serve(self, interval=5):
         print("المدينة شغالة. أضف طلبات من terminal ثاني: python agentcity.py add \"...\"  (Ctrl+C للإيقاف)")
-        while True:
-            self.st = store.load()
-            if not store.killed():
-                self.run_all(resume=("queued", "paused_stop"))   # budget/error بدهم قرار المالك
-            time.sleep(interval)
+        store.claim_runner()
+        try:
+            while True:
+                self.st = store.load()
+                self.apply_inbox()
+                if not store.killed():
+                    self.run_all(resume=("queued", "paused_stop"), claim=False)   # budget/error بدهم قرار المالك
+                time.sleep(interval)
+        finally:
+            store.release_runner()

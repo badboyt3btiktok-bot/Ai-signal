@@ -90,3 +90,52 @@ def verify_protected():
     if fixed:
         audit("tamper_restored", files=fixed)
     return fixed
+
+
+# ---------- طابور الأوامر (ويب/CLI) + قفل المشغّل ----------
+# أي قرار (موافقة/رفض/طلب جديد) بينكتب بطابور. اللي بيطبّقه هو المشغّل (run/serve) إذا شغال،
+# أو العملية نفسها إذا ما في مشغّل. هيك ما في عمليتين بيكتبوا state.json فوق بعض.
+import fcntl
+
+
+def enqueue(kind, **data):
+    with open(path("inbox.jsonl"), "a", encoding="utf-8") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        f.write(json.dumps({"t": time.strftime("%F %T"), "kind": kind, **data}, ensure_ascii=False) + "\n")
+    audit("enqueued", kind=kind, **data)
+
+
+def drain():
+    p = path("inbox.jsonl")
+    if not os.path.exists(p):
+        return []
+    with open(p, "r+", encoding="utf-8") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        items = [json.loads(l) for l in f if l.strip()]
+        f.seek(0); f.truncate()
+    return items
+
+
+def runner_alive():
+    try:
+        pid = int(open(path("RUNNER")).read().strip())
+        if pid == os.getpid():
+            return False
+        os.kill(pid, 0)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def claim_runner():
+    if runner_alive():
+        raise SystemExit("في مشغّل ثاني شغال للمدينة (run/serve). استنى يخلص أو أوقفه.")
+    open(path("RUNNER"), "w").write(str(os.getpid()))
+
+
+def release_runner():
+    try:
+        if int(open(path("RUNNER")).read().strip()) == os.getpid():
+            os.remove(path("RUNNER"))
+    except (OSError, ValueError):
+        pass

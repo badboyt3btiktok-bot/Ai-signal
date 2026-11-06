@@ -20,7 +20,11 @@ python agentcity.py status
 python agentcity.py approvals    # أي شي استنى موافقتك
 python agentcity.py approve a1   # ثم run
 python agentcity.py stop         # إيقاف طوارئ فوري (resume للاستئناف)
+python agentcity.py sandbox      # ابني صورة Docker لعزل كود الايجنت (مرة وحدة)
+python agentcity.py data         # نزّل بيانات الذهب وجمّدها (الـ sandbox بدون إنترنت)
+python agentcity.py web          # واجهة مراقبة وموافقات للموبايل (بيطبع رابط فيه توكن)
 python tests/test_city.py        # اختبار منطق المدينة بدون API
+python tests/test_improvements.py # sandbox، قواعد المخاطر، البروتوكول، الطابور، الويب
 python tests/test_api_contract.py # اختبار توافق مع قواعد Claude API (thinking, max_tokens, refusal, JSON, سقف التوكنز)
 ```
 كل شغل الايجنت بمجلد `city_home/workspace/<project>/`، والمهارات بـ `city_home/skills/`.
@@ -32,7 +36,15 @@ python tests/test_api_contract.py # اختبار توافق مع قواعد Clau
 التوكنز المحسوبة = input + cache write + cache read + output (يعني السقف محافظ). `status` بيعرض كمان تقدير الكلفة بالدولار.
 
 ## تنبيهات صريحة
-- `run_python` مش sandbox حقيقي (تشغيل Python محلي بدون مفتاح API وبمهلة). شغّل المدينة داخل Docker أو VM، خصوصاً مع `fetch_url` و`shell`.
+- **Sandbox:** `run_python` و`shell` بيشتغلوا بحاوية Docker: بدون شبكة، rootfs للقراءة، بدون capabilities، حدود ذاكرة/CPU/عمليات،
+  مجلد المشروع بس قابل للكتابة و`shared/` (فيه risk.py) للقراءة فقط. `CITY_SANDBOX=auto|docker|local`
+  (auto بيرجع لتشغيل محلي مع تحذير إذا الصورة مش مبنية؛ docker = إجباري). `fetch_url` لسا بيشتغل من المدينة نفسها.
+- **قواعد المخاطر:** لازم الاستراتيجية تتفوق على الشراء والاحتفاظ (Sharpe)، وحد أدنى صفقات على train/validation/test.
+  `gold_toolkit.protocol` بيفتح الاختبار النهائي مرة وحدة وبس لاستراتيجية نجحت، والمدينة بتراقب `final_test.lock`
+  (حذف/تعديل = تحذير نزاهة بالتقرير وبالويب).
+- **الويب:** كل شي بتوكن (`CITY_WEB_TOKEN` أو `city_home/web_token`)، كوكي HttpOnly/SameSite=Strict + فحص CSRF.
+  الافتراضي 127.0.0.1؛ للموبايل من برّا استعمل نفق آمن (Tailscale/WireGuard)، مش port مفتوح. القرارات بتروح لطابور
+  وبيطبّقها المشغّل الشغال، فما في تضارب على state.json.
 - لحد هلأ ما اختبرتها مع Claude الحقيقي، فقط منطق المدينة بنموذج وهمي. أول تشغيل راقب `status` و`audit.jsonl`.
 - ملفات `shared/gold_toolkit` الأصلية (risk.py, backtest.py...) محمية: write_file بيرفضها، وقبل كل مهمة بتنفحص وبترجع من seed إذا انعدّلت (`tamper_restored` بالتدقيق). الايجنت بيقدروا يضيفوا ملفات جديدة.
 - بيانات الذهب: `data.from_yahoo()` (يحتاج `pip install yfinance`) بينزّل GC=F مرة وبيجمّدها بـ `shared/data/gold_GCF_daily.csv`. GC=F عقود آجلة، مش سبوت XAUUSD بالظبط.

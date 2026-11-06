@@ -30,7 +30,11 @@ def from_yahoo(years=12, cache=CACHE, refresh=False) -> pd.Series:
     (عشان train/val/test ما يتغيروا بين تشغيل وتشغيل). الشمعة اليومية غير المكتملة بتنحذف."""
     if cache and os.path.exists(cache) and not refresh:
         return from_csv(cache)
-    import yfinance as yf
+    try:
+        import yfinance as yf
+    except ImportError:
+        raise RuntimeError("No cached gold data and no yfinance here (agent code runs in an offline sandbox). "
+                           "The owner must run: python agentcity.py data")
     df = yf.download("GC=F", period=f"{years}y", interval="1d", progress=False, auto_adjust=True)
     c = df["Close"]
     c = c.iloc[:, 0] if hasattr(c, "columns") else c
