@@ -151,6 +151,8 @@ def _slug(n):
 
 
 def save_skill(ctx, a):
+    if store.seed_skill(_slug(a["name"])):
+        raise PermissionError("هاي مهارة أساسية للمدينة وما بتنكتب فوقها. احفظها باسم جديد.")
     p = store.path("skills", _slug(a["name"]) + ".md")
     open(p, "w", encoding="utf-8").write(f"description: {a['description']}\n# {a['name']}\n{a['content']}\n")
     store.audit("skill_saved", agent=ctx.agent, name=a["name"])

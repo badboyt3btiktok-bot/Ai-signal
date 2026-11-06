@@ -191,3 +191,14 @@ r = fb.chat("You are x", [{"role": "user", "content": "hi"}], [])
 assert r.text == "ok" and r.tool_calls[0]["name"] == "list_files" and r.stop_reason == "tool_use" and r.tokens > 0
 assert r.tool_calls[0]["id"], "tool_use id generated"
 print("FILE BACKEND OK")
+
+# ---------- 7) مهارات الـ seed بتتحدّث (bug ظهر بتشغيل مشروع الذهب الحقيقي: الايجنت قرا مهارة قديمة) ----------
+sk = store.path("skills", "gold_toolkit.md")
+open(sk, "w").write("description: stale old version\n")
+store.init()
+assert "protocol.Protocol" in open(sk, encoding="utf-8").read(), "seed skill not refreshed"
+try:
+    tools.save_skill(ctx, {"name": "gold_toolkit", "description": "x", "content": "y"}); raise SystemExit("seed skill overwritten")
+except PermissionError:
+    pass
+print("SEED SKILL REFRESH OK")

@@ -35,8 +35,14 @@ def init():
     sk = os.path.join(SEED, "skills")
     if os.path.isdir(sk):
         for f in os.listdir(sk):
-            if not os.path.exists(path("skills", f)):
-                shutil.copy(os.path.join(sk, f), path("skills", f))
+            # مهارات الـ seed ملك المدينة: بتتحدّث لما الأدوات تتحدّث (كانت تنسخ مرة وحدة وتضل قديمة)
+            src, dst = os.path.join(sk, f), path("skills", f)
+            if not os.path.exists(dst) or open(src, "rb").read() != open(dst, "rb").read():
+                shutil.copy(src, dst)
+
+
+def seed_skill(name):
+    return os.path.exists(os.path.join(SEED, "skills", name + ".md"))
 
 
 def load():

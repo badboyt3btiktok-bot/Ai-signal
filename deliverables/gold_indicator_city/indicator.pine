@@ -1,0 +1,17 @@
+//@version=5
+// Agent City - Gold rsi_reversion_5_15_80 | SIGNALS ONLY, no order execution. Not financial advice.
+// Honest result: see REPORT_GOLD.md (failed the final test vs buy & hold).
+indicator("Gold City - RSI Reversion", overlay=true)
+r = ta.rsi(close, 5)
+var bool inPos = false
+buy = barstate.isconfirmed and not inPos and r < 15
+sell = barstate.isconfirmed and inPos and r > 80
+if buy
+    inPos := true
+if sell
+    inPos := false
+bgcolor(inPos ? color.new(color.green, 92) : na)
+plotshape(buy, "BUY", shape.triangleup, location.belowbar, color.green, size=size.small)
+plotshape(sell, "SELL", shape.triangledown, location.abovebar, color.red, size=size.small)
+alertcondition(buy, "BUY", "Gold BUY signal")
+alertcondition(sell, "SELL", "Gold SELL signal")
