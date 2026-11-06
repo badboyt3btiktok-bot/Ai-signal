@@ -48,3 +48,39 @@ def from_yahoo(years=12, cache=CACHE, refresh=False) -> pd.Series:
         os.makedirs(os.path.dirname(cache), exist_ok=True)
         c.rename_axis("date").to_csv(cache)
     return c
+
+
+# ---------- بيانات "المستقبل" (forward): أيام ما بعد التجميد، الحكم الصادق الوحيد ----------
+FORWARD = os.path.join(os.path.dirname(CACHE), "gold_GCF_forward.csv")
+
+
+def freeze_end():
+    """آخر يوم بالنسخة المجمّدة. كل شي بعده = مستقبل ما انشاف وقت البحث."""
+    return from_yahoo().index[-1]
+
+
+def update_forward(days=90) -> int:
+    """(بتشغّلها المدينة، مش الايجنت) بتضيف الأيام المكتملة الجديدة بعد التجميد. بترجع عدد أيام المستقبل."""
+    import yfinance as yf
+    end = freeze_end()
+    df = yf.download("GC=F", period=f"{days}d", interval="1d", progress=False, auto_adjust=True)
+    c = df["Close"]
+    c = (c.iloc[:, 0] if hasattr(c, "columns") else c).dropna().rename("close")
+    c.index = pd.to_datetime(c.index).tz_localize(None)
+    if len(c) and c.index[-1].date() >= pd.Timestamp.utcnow().date():
+        c = c.iloc[:-1]                                    # شمعة اليوم مش مكتملة
+    old = from_csv(FORWARD) if os.path.exists(FORWARD) else pd.Series(dtype=float, name="close")
+    new = c[c.index > end]
+    fw = pd.concat([old[~old.index.isin(new.index)], new]).sort_index()
+    fw = fw[fw.index > end]
+    fw.rename_axis("date").to_csv(FORWARD)
+    return len(fw)
+
+
+def full() -> pd.Series:
+    """النسخة المجمّدة + أيام المستقبل (للاختبار على المستقبل فقط)."""
+    s = from_yahoo()
+    if os.path.exists(FORWARD):
+        f = from_csv(FORWARD)
+        s = pd.concat([s, f[f.index > s.index[-1]]])
+    return s

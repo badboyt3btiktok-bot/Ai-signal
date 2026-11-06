@@ -22,7 +22,7 @@ EVENT_AR = {"request": "طلب جديد من المالك", "planned": "المد
             "task": "مهمة انتهت", "approval_requested": "ايجنت طلب موافقتك", "approval": "قرار موافقة",
             "final_test_opened": "انفتح الاختبار النهائي (مرة وحدة)", "integrity_violation": "⚠️ مخالفة نزاهة",
             "skill_saved": "المدينة تعلمت مهارة", "tamper_restored": "رجّعنا ملفات محمية لنسختها الأصلية",
-            "recovered": "المدير أعاد صياغة مهمة", "refusal": "النموذج رفض طلب", "task_error": "خطأ بمهمة",
+            "recovered": "المدير أعاد صياغة مهمة", "lab_trial": "فكرة انقدّمت للمختبر", "lab_daily": "تحديث اختبار المستقبل", "refusal": "النموذج رفض طلب", "task_error": "خطأ بمهمة",
             "stop": "إيقاف طوارئ", "resume": "استئناف"}
 
 
@@ -133,6 +133,7 @@ h3{font-size:16px;font-weight:600}
 .step .who{font-size:12px;color:var(--mut)}
 .summary{margin-block:10px 0;padding:10px 12px;background:var(--chip);border-radius:8px;font-size:14px;white-space:pre-wrap}
 .warn{color:var(--bad);font-size:13px}
+td,th{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
 .tl{list-style:none;margin:0;padding:0;border-inline-start:2px solid var(--line)}
 .tl li{position:relative;padding:4px 14px 8px;font-size:13px}
 .tl li::before{content:"";position:absolute;inset-inline-start:-6px;top:10px;width:10px;height:10px;border-radius:50%;background:var(--panel);border:2px solid var(--acc)}
@@ -235,10 +236,38 @@ def render(fragment=True):
             det = f'{e.get("id", "")} {e.get("action", "")} {e.get("details", "")}'[:120]
         elif ev == "tamper_restored":
             det = "، ".join(os.path.basename(f) for f in e.get("files", []))
+        elif ev == "lab_trial":
+            det = f'{e.get("name")} · {e.get("agent")} · {e.get("verdict")}'
+        elif ev == "lab_daily":
+            det = f'أيام مستقبل: {e.get("forward_days")} · استراتيجيات تحت الاختبار: {e.get("active")}'
         elif ev == "skill_saved":
             det = e.get("name", "")
         tl.append(f'<li class="{"bad" if ev in ("integrity_violation", "task_error", "refusal") else ""}">'
                   f'<time>{E(e.get("t", "")[5:16])}</time><b>{E(EVENT_AR[ev])}</b> <span class="mut">{E(det)}</span></li>')
+    # ---------- مختبر الاستراتيجيات ----------
+    labhtml = ""
+    try:
+        from . import lab as _lab
+        lb, lt = _lab.board(), _lab.trials()
+    except Exception:
+        lb, lt = {}, []
+    if lb or lt:
+        ST = {"forward": ("بالاختبار على المستقبل", "done"), "rejected": ("انرفضت", "failed"), "waitlist": ("بالدور", "pending"),
+              "error": ("خطأ بالكود", "failed"), "promoted": ("نجحت", "done")}
+        rows = []
+        for k, v in sorted(lb.items(), key=lambda kv: (kv[1].get("status") != "forward", kv[1].get("submitted", "")), reverse=False):
+            f, va = v.get("forward") or {}, v.get("val") or {}
+            fw = (f'{f.get("days", 0)} يوم · {f.get("return", 0):+.2%} مقابل {f.get("buy_hold", 0):+.2%}' if v.get("status") == "forward" else "—")
+            lab_, cls = ST.get(v.get("status"), (v.get("status"), ""))
+            rows.append(f'<tr><td><b>{E(k)}</b><div class="mut" style="font-size:12px">{E((v.get("hypothesis") or "")[:110])}</div></td>'
+                        f'<td class="num">{E(str(va.get("sharpe", "—")))}<span class="mut"> / {E(str(va.get("bh_sharpe", "—")))}</span></td>'
+                        f'<td><span class="st {cls}">{E(lab_)}</span><div class="mut" style="font-size:12px">{E("; ".join(v.get("reasons") or [])[:120])}</div></td>'
+                        f'<td class="num">{E(fw)}</td><td>{E(v.get("agent", ""))}</td></tr>')
+        labhtml = (f'<h2>مختبر الاستراتيجيات</h2><p class="mut" style="max-width:70ch">الايجنت بيخترعوا أفكار، والمدينة بتقيّمها بكود ثابت جوا Docker. '
+                   f'اللي بتنجح بتنختبر على أيام جديدة ما حدا شافها. <b class="num">{len(lt)}</b> محاولة لحد هلأ؛ كل ما زادت المحاولات زاد احتمال نجاح بالصدفة، '
+                   f'فالحكم الحقيقي هو عمود "المستقبل".</p><div class="box" style="overflow-x:auto;padding:0"><table style="width:100%;border-collapse:collapse;font-size:13px">'
+                   f'<thead><tr style="text-align:right"><th style="padding:8px">الفكرة</th><th>Sharpe تحقق / شراء واحتفاظ</th><th>الحالة</th><th>المستقبل</th><th>مين</th></tr></thead>'
+                   f'<tbody>{"".join(rows)}</tbody></table></div>')
     skills = "".join(f"<li>{E(s[:140])}</li>" for s in d["skills"]) or "<li class='mut'>ولا وحدة لسا</li>"
     lessons = "".join(f"<li>{E(l[:200])}</li>" for l in st["lessons"]) or "<li class='mut'>ولا درس لسا</li>"
     llm = f'<span><b>{d["llm_n"]}</b> طلب للعقل</span>' if d["llm_n"] else ""
@@ -258,7 +287,7 @@ def render(fragment=True):
             f'</div><div class="street"></div></header><main class="wrap">'
             f'<h2>هيكل الشركة</h2>{org}'
             f'<h2>الفريق</h2><div class="cards">{"".join(cards)}</div>'
-            f'<h2>المشاريع</h2>{"".join(projs) or "<p class=mut>ما في مشاريع لسا.</p>"}'
+            f'{labhtml}<h2>المشاريع</h2>{"".join(projs) or "<p class=mut>ما في مشاريع لسا.</p>"}'
             f'<div class="two" style="margin-top:28px"><div class="box"><h3 style="margin-bottom:8px">مهارات المدينة</h3><ul>{skills}</ul></div>'
             f'<div class="box"><h3 style="margin-bottom:8px">دروس الشركة</h3><ul>{lessons}</ul></div></div>'
             f'<h2>شو صار مؤخراً</h2><ul class="tl">{"".join(tl) or "<li class=mut>ولا شي لسا</li>"}</ul>'

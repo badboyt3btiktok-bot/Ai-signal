@@ -20,6 +20,10 @@ class City:
     def __init__(self):
         store.init()
         self.st = store.load()
+        for n, spec in store.DEFAULT_AGENTS.items():      # ترقية: أدوات جديدة للايجنت الأساسيين بالمدن القديمة
+            if n in self.st["agents"]:
+                have = self.st["agents"][n]["tools"]
+                have += [t for t in spec["tools"] if t not in have]
         if not store.runner_alive():
             self.apply_inbox()
 

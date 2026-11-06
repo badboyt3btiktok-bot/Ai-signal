@@ -1,5 +1,5 @@
 """أدوات الايجنت. كل ايجنت بياخد فقط الأدوات المسموحة لدوره. الأفعال الخطرة (shell) لازم موافقتك."""
-import os, re, subprocess, sys, urllib.request
+import json, os, re, subprocess, sys, urllib.request
 from . import sandbox, store
 
 
@@ -175,6 +175,22 @@ def load_skill(ctx, a):
     return open(store.path("skills", _slug(a["name"]) + ".md"), encoding="utf-8").read()[:15000]
 
 
+def lab_submit(ctx, a):
+    from . import lab
+    src = _safe(ctx, a["path"])
+    if not os.path.isfile(src):
+        raise FileNotFoundError(a["path"])
+    r = lab.submit(src, a.get("name") or os.path.basename(src)[:-3], agent=ctx.agent, project=ctx.project["id"],
+                   hypothesis=a.get("hypothesis", ""))
+    r.pop("best_train", None)
+    return json.dumps(r, ensure_ascii=False)[:6000]
+
+
+def lab_board(ctx, a):
+    from . import lab
+    return lab.summary()
+
+
 def S(**p):
     return {"type": "object", "properties": {k: {"type": "string", "description": v} for k, v in p.items()},
             "required": list(p)}
@@ -196,6 +212,13 @@ ALL = {
                          S(action="short action name", details="exact details"), request_approval),
     "save_skill": ("Save a reusable procedure so every agent in the city can use it later.",
                    S(name="skill name", description="one line", content="markdown how-to"), save_skill),
+    "lab_submit": ("Submit a strategy file (in your workspace) to the city's Strategy Lab. The city evaluates it in a sandbox: "
+                   "selection on train, ONE look at validation, look-ahead check, risk rules. Passing ideas enter a live "
+                   "forward test on new data. Counts toward a daily trial limit.",
+                   S(path="relative path of the strategy .py", name="short snake_case name",
+                     hypothesis="why this edge might exist (1-2 sentences)"), lab_submit),
+    "lab_board": ("Read the Strategy Lab leaderboard: forward-test results, trial count, recent rejections and why.",
+                  {"type": "object", "properties": {}}, lab_board),
     "list_skills": ("List skills the city has learned.", {"type": "object", "properties": {}}, list_skills),
     "load_skill": ("Read a skill by name.", S(name="skill name"), load_skill),
 }

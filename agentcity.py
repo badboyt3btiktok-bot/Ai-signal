@@ -1,4 +1,4 @@
-import argparse, sys
+import argparse, json, os, sys
 from city import store
 from city.city import City
 
@@ -16,6 +16,10 @@ sub.add_parser("stop", help="مفتاح إيقاف طوارئ"); sub.add_parser(
 sub.add_parser("sandbox", help="ابني صورة Docker لعزل كود الايجنت")
 dd = sub.add_parser("data", help="نزّل بيانات الذهب الحقيقية (GC=F) وجمّدها لكل الفريق")
 dd.add_argument("--refresh", action="store_true", help="تحديث النسخة المجمّدة (بيغيّر train/val/test لأي مشروع شغال!)")
+LB = sub.add_parser("lab", help="مختبر الاستراتيجيات: board | daily | submit FILE")
+LB.add_argument("action", choices=["board", "daily", "submit"]); LB.add_argument("file", nargs="?"); LB.add_argument("--name")
+sub.add_parser("research-day", help="جولة بحث يومية: المختبر بيتحدّث، والمدير بيستلم مهمة بحث جديدة")
+SS = sub.add_parser("state", help="احفظ/رجّع ذاكرة المدينة (city_state/ بالريبو)"); SS.add_argument("action", choices=["export", "import"])
 V = sub.add_parser("view", help="ولّد صفحة HTML بتوريك المدينة والايجنت والمشاريع"); V.add_argument("--out", default="city.html")
 L = sub.add_parser("llm", help="وضع CITY_BACKEND=file: اعرض الطلبات المعلقة أو رد عليها")
 L.add_argument("action", choices=["show", "reply"]); L.add_argument("n", nargs="?", type=int)
@@ -68,6 +72,37 @@ if args.cmd == "llm":
     tmp = os.path.join(d, "outbox", f"{n}.json.tmp")
     open(tmp, "w", encoding="utf-8").write(body); os.replace(tmp, os.path.join(d, "outbox", f"{n}.json"))
     sys.exit(print(f"replied {n}"))
+if args.cmd == "lab":
+    store.init()
+    from city import lab
+    if args.action == "board":
+        sys.exit(print(lab.summary()))
+    if args.action == "daily":
+        r = lab.daily(); sys.exit(print("أيام المستقبل:", r["forward_days"], "\n" + lab.summary()))
+    r = lab.submit(args.file, args.name or os.path.basename(args.file)[:-3])
+    sys.exit(print(json.dumps({k: r.get(k) for k in ("name", "status", "params", "val", "reasons", "error")}, ensure_ascii=False, indent=1)))
+if args.cmd == "research-day":
+    store.init()
+    from city import lab
+    lab.daily()
+    c = City()
+    if any(P["status"] in ("queued", "running") and P["request"].startswith("[RESEARCH DAY]") for P in c.st["projects"].values()):
+        sys.exit(print("في جولة بحث لسا ما خلصت؛ ما ضفت وحدة جديدة."))
+    day = sum(P["request"].startswith("[RESEARCH DAY]") for P in c.st["projects"].values()) + 1
+    req = (f"[RESEARCH DAY] #{day}: continuous gold (GC=F daily) strategy research in the Strategy Lab. Signals only, no trading.\n"
+           "Goal: find edges that beat buy & hold on risk-adjusted terms AND survive the live forward test.\n"
+           "Plan at most 3 tasks: (1) review lab_board + company lessons and write ideas.md with 2-3 NEW, economically "
+           "motivated hypotheses that differ from what was already tried (not parameter tweaks of rejected ideas); "
+           "(2) implement each as a strategy module (HYPOTHESIS, small PARAMS grid <= 60 combos, causal signal(close, **p) -> 0/1) "
+           "and submit with lab_submit (each idea ONE submission; never resubmit tweaks to chase validation); "
+           "(3) write research_log.md: what was tried, lab verdicts, forward-test status of active strategies, honest conclusion.\n"
+           "Rules: never evaluate the validation period yourself to tune; the lab does that once. Quality over quantity.\n\n"
+           f"CURRENT LAB STATE:\n{lab.summary()}")
+    sys.exit(print("جولة بحث جديدة:", c.add_request(req)))
+if args.cmd == "state":
+    store.init()
+    from city import persist
+    sys.exit(print(persist.export_state() if args.action == "export" else persist.import_state()))
 if args.cmd == "view":
     store.init()
     from city import cityview

@@ -5,15 +5,15 @@ SEED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "seed")
 WORK = ["read_file", "write_file", "list_files", "list_skills", "load_skill", "save_skill", "request_approval"]
 
 DEFAULT_AGENTS = {
-    "researcher": {"role": "researcher", "tools": WORK + ["fetch_url"],
+    "researcher": {"role": "researcher", "tools": WORK + ["fetch_url", "lab_board"],
                    "instructions": "You research topics rigorously, compare sources, and write findings to files."},
-    "engineer": {"role": "engineer", "tools": WORK + ["run_python", "shell"],
+    "engineer": {"role": "engineer", "tools": WORK + ["run_python", "shell", "lab_submit", "lab_board"],
                  "instructions": "You write and TEST code. Never claim code works before running it."},
-    "analyst": {"role": "analyst", "tools": WORK + ["run_python", "fetch_url"],
+    "analyst": {"role": "analyst", "tools": WORK + ["run_python", "fetch_url", "lab_submit", "lab_board"],
                 "instructions": "You analyze data and run experiments with strict methodology (no data leakage)."},
     "writer": {"role": "writer", "tools": WORK,
                "instructions": "You write clear reports and documentation from the team's outputs."},
-    "qa": {"role": "qa", "tools": ["read_file", "list_files", "run_python", "list_skills", "load_skill"],
+    "qa": {"role": "qa", "tools": ["read_file", "list_files", "run_python", "list_skills", "load_skill", "lab_board"],
            "instructions": "You independently verify deliverables by reading files and running code. Be strict."},
 }
 
