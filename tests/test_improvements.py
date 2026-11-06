@@ -221,6 +221,12 @@ def ia(cmd):
 r = ia({"kind": "request", "text": "جرّبوا أفكار على الفضة"})
 assert r["status"] == "applied" and "مشروع" in r["note"], r
 assert ia({"kind": "request", "text": "x"})["status"] == "rejected"
+r = ia({"kind": "request", "text": "حسّنوا سرعة فحص المختبر", "target": "engineer"})
+assert r["status"] == "applied"
+last = max(store.load()["projects"].values(), key=lambda P: P["created"] + P["id"].zfill(5))
+assert "'engineer' agent" in last["request"], last["request"]
+assert ia({"kind": "request", "text": "فكرة جديدة للذهب", "target": "lab"})["status"] == "applied"
+assert ia({"kind": "request", "text": "مهمة لحي وهمي", "target": "../../etc"})["status"] == "rejected"
 assert ia({"kind": "approve", "approval": "nope"})["status"] == "rejected"
 assert ia({"kind": "hack"})["status"] == "rejected"
 assert ia({"kind": "stop"})["status"] == "applied" and store.killed()

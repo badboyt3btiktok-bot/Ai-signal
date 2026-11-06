@@ -113,6 +113,15 @@ if args.cmd == "inbox-apply":
             text = str(cmd.get("text", "")).strip()
             if not 5 <= len(text) <= 4000:
                 raise ValueError("نص الطلب لازم يكون بين 5 و4000 حرف")
+            target = str(cmd.get("target") or "ceo")
+            agents = store.load()["agents"]
+            if target not in agents and target not in ("ceo", "lab"):
+                raise ValueError(f"ما في حي اسمه {target}")
+            if target == "lab":
+                text = ("[فكرة للمختبر] " + text + "\n\n(Owner idea for the Strategy Lab: the analyst writes it as one causal strategy "
+                        "module and submits it ONCE with lab_submit; report the lab verdict honestly.)")
+            elif target != "ceo":
+                text += f"\n\n(The owner asked that this work be assigned to the '{target}' agent.)"
             if store.runner_alive():
                 store.enqueue("request", text=text, via="page"); res = {"status": "applied", "note": "وصل للمشغّل الشغال"}
             else:

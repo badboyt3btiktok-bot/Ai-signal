@@ -208,6 +208,7 @@ ul.plain{margin:0;padding-inline-start:18px;font-size:13px;color:var(--mut2)}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 .cmdbox{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:16px}
 .cmdbox label{font-size:13px;color:var(--mut)}
+.cmdbox.task{border:1px solid;border-radius:14px;padding:14px;background:rgba(61,224,255,.04)}
 textarea{resize:vertical;min-height:84px;padding:12px;border-radius:10px;background:var(--bg);border:1px solid var(--line2);color:var(--ink);font:15px/1.6 var(--f)}
 textarea:focus-visible{outline:2px solid var(--cyan);outline-offset:1px}
 .msg{font-size:13px;color:var(--mut);min-height:1.2em}
@@ -225,7 +226,7 @@ textarea:focus-visible{outline:2px solid var(--cyan);outline-offset:1px}
   <div class="logo"><div class="mk"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 13V3l6 7V3M14 3v10" stroke="#3DE0FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
   <div><b>NEXUS</b><small>مدينة الـ Agents تبعك</small></div></div>
   <div class="pills" id="pills"></div>
-  <div class="hbtns"><button type="button" class="btn stop" id="b-stop">⛔ إيقاف طوارئ</button><button type="button" class="btn go" id="b-resume">▶ استئناف</button></div>
+  <div class="hbtns"><button type="button" class="btn pri" id="b-new">+ مهمة جديدة</button><button type="button" class="btn stop" id="b-stop">⛔ إيقاف طوارئ</button><button type="button" class="btn go" id="b-resume">▶ استئناف</button></div>
 </header>
 <div class="grid">
   <aside aria-live="polite" id="side"></aside>
@@ -338,20 +339,23 @@ function pick(k) {
   const done = d.jobs.filter(j => j.st === "done").length;
   const bars = d.bars.some(b => b) ? (() => { const m = Math.max(...d.bars); return `<div class="bars" aria-hidden="true">${d.bars.map(b => `<div style="height:${Math.max(3, b / m * 44)}px;background:${d.color}"></div>`).join("")}</div>`; })() : '<div class="empty">لسا ما في نشاط مسجّل.</div>';
   const jobs = d.jobs.length ? d.jobs.slice(0, 6).map(j => `<div class="job"><span>${esc(j.p)} · ${esc(j.title)}</span><span class="st ${esc(j.st)}">${esc(j.st_ar)}</span></div>`).join("") : '<div class="empty">ما اشتغل بأي مشروع لسا.</div>';
+  const box = k === "ceo" ? { title: "مهمة جديدة للمدير", hint: "المدير بيقسمها لمهام وبيوزعها على الفريق المناسب.", ph: "مثال: اعملولي تقرير أسبوعي عن أداء الاستراتيجيات بالمختبر", btn: "أرسل للمدير" }
+    : k === "lab" ? { title: "فكرة استراتيجية للمختبر", hint: "الفريق بيكتب الفكرة ككود وبيقدّمها للمختبر مرة وحدة، والمختبر بيحكم.", ph: "مثال: جرّبوا شراء الذهب لما الدولار يضعف أسبوعين ورا بعض", btn: "أرسل الفكرة" }
+    : { title: "مهمة لـ " + d.name, hint: "المدير بيسلّم هالمهمة لـ " + d.kind + " تحديداً.", ph: "مثال: " + ({ engineer: "حسّنوا سرعة فحص المختبر", analyst: "حللوا أداء شراء النزلة حسب الشهر", researcher: "ابحثوا عن أفكار جديدة لاستراتيجيات الذهب", writer: "اكتبولي ملخص بالعربي لكل نتائج المختبر", qa: "راجعوا كل استراتيجيات المختبر من جديد" }[k] || "اكتب المهمة"), btn: "أرسل لـ " + d.name };
   const tools = d.tools.length ? `<div><div class="h">الصلاحيات</div><div class="chips">${d.tools.map(t => `<span class="chip ${t.risk}">${esc(t.t)}</span>`).join("")}</div></div>` : "";
   $("#side").innerHTML = `
     <div><div class="kind" style="color:${d.color}"><i style="background:${d.color};box-shadow:0 0 10px ${d.color}"></i>${esc(d.kind)}</div>
     <div class="dname">${esc(d.name)}</div><div class="ddesc">${esc(d.desc)}</div></div>
+    <div class="cmdbox task" id="taskbox" style="border-color:${d.color}"><div class="h" style="margin:0;color:var(--ink);font-size:15px">${esc(box.title)}</div>
+      <label for="cmdtext">${esc(box.hint)}</label>
+      <textarea id="cmdtext" maxlength="4000" placeholder="${esc(box.ph)}"></textarea>
+      <button type="button" class="btn pri" id="b-send" data-target="${esc(k)}">${esc(box.btn)}</button><div class="msg" id="sendmsg" role="status"></div></div>
     <div class="tiles"><div class="tile"><div class="mono">${d.n}</div><div>${unit}</div></div>
     <div class="tile"><div class="mono">${d.jobs.length}</div><div>${k === "ceo" ? "مشاريع" : k === "lab" ? "أفكار" : "مهام"}</div></div>
     <div class="tile"><div class="mono" style="color:var(--green)">${done}</div><div>${k === "lab" ? "بالمستقبل" : "خلصت"}</div></div></div>
     <div><div class="h">النشاط حسب الساعة</div>${bars}</div>
     ${d.top.length ? `<div><div class="h">أكتر شي بيستعمل</div><div class="chips">${d.top.map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div></div>` : ""}
     <div><div class="h">${k === "ceo" ? "المشاريع" : k === "lab" ? "الأفكار" : "الشغل"}</div>${jobs}</div>${tools}
-    <div class="cmdbox"><div class="h" style="margin:0">أمر جديد للمدينة</div>
-      <label for="cmdtext">الأمر بيوصل للمدير، وهو بيخطط وبيوزع على الأحياء</label>
-      <textarea id="cmdtext" maxlength="4000" placeholder="مثال: جرّبوا أفكار على الفضة كمان، وقارنوها مع الذهب"></textarea>
-      <button type="button" class="btn pri" id="b-send">أرسل للمدينة</button><div class="msg" id="sendmsg" role="status"></div></div>
     <div style="font-size:12px;color:var(--mut);border-top:1px solid var(--line);padding-top:12px">الألوان: <span class="chip approve">بحتاج موافقتك</span> <span class="chip box">معزول بـ Docker</span> <span class="chip net">إنترنت</span></div>`;
 }
 pick("ceo");
@@ -375,7 +379,7 @@ const STAT = { pending: "بالانتظار", applied: "انتنفّذ", rejecte
 let DB = null, UID = null, lastDraft = "";
 function setMsg(t, cls) { const m = $("#sendmsg"); if (m) { m.textContent = t; m.className = "msg " + (cls || ""); } }
 function canSend(on, why) {
-  document.querySelectorAll("#b-send,#b-stop,#b-resume,.appr .btn").forEach(b => { b.disabled = !on; });
+  document.querySelectorAll("#b-send,#b-new,#b-stop,#b-resume,.appr .btn").forEach(b => { b.disabled = !on; });
   if (!on && why) { const i = $("#inbox"); if (i) i.innerHTML = `<div class="empty">${esc(why)}</div>`; }
 }
 async function send(kind, extra = {}) {
@@ -408,8 +412,10 @@ document.addEventListener("click", async ev => {
     const ta = $("#cmdtext"), text = ta.value.trim();
     if (text.length < 5) { setMsg("اكتب الأمر أول (5 حروف على الأقل).", "err"); return; }
     t.disabled = true; setMsg("عم يرسل...");
-    if (await send("request", { text })) { ta.value = ""; lastDraft = ""; setMsg("وصل للصندوق. المدينة رح تستلمه بجولتها الجاية.", "ok"); }
+    if (await send("request", { text, target: t.dataset.target || "ceo" })) { ta.value = ""; lastDraft = ""; setMsg("وصل للصندوق. المدينة رح تستلمه بجولتها الجاية.", "ok"); }
     t.disabled = false;
+  } else if (t.id === "b-new") {
+    const box = $("#taskbox"); box.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" }); $("#cmdtext").focus();
   } else if (t.id === "b-stop" || t.id === "b-resume") {
     const kind = t.id === "b-stop" ? "stop" : "resume";
     t.disabled = true;
@@ -431,7 +437,7 @@ canSend(false);
   db.collection("inbox").orderBy("at", "desc").limit(25).onSnapshot(snap => {
     clearTimeout(timer); canSend(true);
     const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    $("#inbox").innerHTML = rows.length ? rows.map(c => `<div class="cmd"><div class="r"><b>${esc(KIND[c.kind] || c.kind)}</b>${c.text ? " · " + esc(c.text) : ""}${c.approval ? " · " + esc(c.approval) : ""}
+    $("#inbox").innerHTML = rows.length ? rows.map(c => `<div class="cmd"><div class="r"><b>${esc(KIND[c.kind] || c.kind)}</b>${c.target && c.target !== "ceo" ? " ← " + esc((D.districts.find(x => x.key === c.target) || {}).name || c.target) : ""}${c.text ? " · " + esc(c.text) : ""}${c.approval ? " · " + esc(c.approval) : ""}
       <div class="note2">${esc((c.at || "").slice(0, 16).replace("T", " "))}${c.note ? " · " + esc(c.note) : ""}</div></div><span class="badge ${esc(c.status)}">${esc(STAT[c.status] || c.status)}</span></div>`).join("")
       : '<div class="empty">ما في أوامر لسا. اكتب أمر بلوحة الحي أو اكبس زر.</div>';
   }, e => { clearTimeout(timer); canSend(false, e && e.code === "not_granted" ? "ما عندك صلاحية تشوف صندوق الأوامر." : "ما قدرت أقرأ الصندوق هلأ."); });
