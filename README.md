@@ -40,6 +40,9 @@ python agentcity.py llm reply --file reply.json   # {"content":[{"type":"text",.
 ```
 التوكنز بهالوضع تقدير (≈4 حروف/توكن) وما في فاتورة API. QA "المستقل" هون نفس العقل اللي اشتغل، فاستقلاليته أضعف.
 
+## تشغيل 24 ساعة على سيرفر
+شوف `deploy/README.md`: سكربت تثبيت، خدمات systemd، وواجهة الموبايل عبر Tailscale.
+
 ## متغيرات
 `CITY_MODEL` (الافتراضي claude-sonnet-5-5)، `CITY_TOKEN_BUDGET` (600000 لكل مشروع، بينفرض حتى جوا المهمة)، `CITY_OWNER_LANG`،
 `CITY_EFFORT` (medium)، `CITY_MAX_TOKENS` (16000)، `CITY_FALLBACKS` (1 = تحويل تلقائي لنموذج ثاني عند الرفض، 0 لإيقافه)، `CITY_RUN_TIMEOUT` (300 ثانية).
