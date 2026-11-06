@@ -1,0 +1,31 @@
+{
+ "name": "rsi_reversion_5_15_80",
+ "template": "rsi_reversion",
+ "params": {
+  "period": 5,
+  "low": 15,
+  "high": 80
+ },
+ "train": {
+  "return": 0.817,
+  "sharpe": 1.11,
+  "max_dd": -0.0786,
+  "trades": 17,
+  "buy_hold": 0.6136,
+  "bh_sharpe": 0.52,
+  "bh_max_dd": -0.1921
+ },
+ "val": {
+  "return": 0.1224,
+  "sharpe": 0.84,
+  "max_dd": -0.0616,
+  "trades": 6,
+  "buy_hold": 0.278,
+  "bh_sharpe": 0.77,
+  "bh_max_dd": -0.2018
+ },
+ "risk": {
+  "passed": true,
+  "reasons": []
+ }
+}

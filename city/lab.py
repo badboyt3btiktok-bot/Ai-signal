@@ -21,6 +21,7 @@ def d(*a):
 
 
 def _toolkit():
+    store.verify_protected()                            # لازم قبل الاستيراد، وإلا بنستورد نسخة قديمة من الأدوات
     sh = store.path("workspace", "shared")
     if sh not in sys.path:
         sys.path.insert(0, sh)

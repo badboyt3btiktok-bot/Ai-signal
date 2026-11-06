@@ -1,0 +1,250 @@
+{
+ "projects": {
+  "p1": {
+   "id": "p1",
+   "request": "اكتب سكربت بايثون يحسب أعداد أولية مع اختبار",
+   "status": "done",
+   "tasks": [
+    {
+     "id": "t1",
+     "title": "primes.py + unit tests",
+     "description": "Write primes.py with is_prime(n) and primes_up_to(n) (Sieve of Eratosthenes) plus a CLI: python primes.py N prints primes <= N. Write test_primes.py using unittest covering edge cases (0,1,2, negatives, large prime 7919, composites, sieve vs is_prime agreement up to 2000). Run the tests and report the real output.",
+     "role": "engineer",
+     "deps": [],
+     "status": "done",
+     "attempts": 1,
+     "output": "Done. Files: primes.py (is_prime via 6k+-1 trial division, primes_up_to via Sieve of Eratosthenes using bytearray slicing, CLI: python primes.py N) and test_primes.py (5 unittest cases: edge/negatives, known primes incl. 7919 and composites incl. 7921=89^2, sieve outputs incl. 1000 primes <= 7919, sieve vs is_prime agreement up to 2000, CLI exit codes). Verified: Ran 5 tests OK; python primes.py 50 printed 2..47. Caveat: is_prime is trial division, O(sqrt n), fine for moderate n but not for huge integers.",
+     "feedback": "",
+     "agent": "engineer"
+    },
+    {
+     "id": "t2",
+     "title": "README usage doc",
+     "description": "Write README.md for the primes script: what it does, how to run it and its tests, complexity notes. Only state facts verified from t1's files and output.",
+     "role": "writer",
+     "deps": [
+      "t1"
+     ],
+     "status": "done",
+     "attempts": 1,
+     "output": "Wrote README.md (description, usage with the verified CLI output, test command, complexity notes). All facts taken from t1 files and its verified output.",
+     "feedback": "",
+     "agent": "writer"
+    }
+   ],
+   "tokens": 13290,
+   "created": "2026-11-06T07:05:55",
+   "summary": "خلص المشروع. الملفات بـ city_home/workspace/p1/: primes.py (فحص عدد أولي + غربال إراتوستينس + أمر: python primes.py N)، test_primes.py (5 اختبارات كلها ناجحة)، وREADME.md. الـ QA تحقق بشكل مستقل: صفر اختلاف مع طريقة بدائية لحد 10000، وعدد الأوليات تحت 100000 = 9592 (القيمة المعروفة). تنبيه: is_prime بطيء للأعداد الضخمة جداً (O(√n)).",
+   "cost_usd": 0.0,
+   "errors": 0
+  },
+  "p2": {
+   "id": "p2",
+   "request": "ابنيلي مؤشر تداول للذهب (XAUUSD) يعطي إشارات شراء وبيع. دوّروا على أفضل استراتيجيات، اختبروها بشكل صارم بدون Overfitting، وسلّموني كود Pine Script لـ TradingView مع تقرير بالنتائج. إشارات فقط، بدون تنفيذ صفقات حقيقية.\n",
+   "status": "done",
+   "tasks": [
+    {
+     "id": "t1",
+     "title": "Data check + strategy search (train/val only)",
+     "description": "Use gold_toolkit (load_skill gold_toolkit). Load data.from_yahoo() (frozen GC=F CSV; sandbox is offline). Validate data (rows, NaNs, non-positive prices, largest daily moves). Pre-registered mechanical protocol, written into research.py BEFORE running: full grid over strategies.CATALOG templates only (sma_cross fast 5..50 step 5 / slow 20..250 step 10; rsi_reversion period 5..30 step 5, low 15..40 step 5, high 55..85 step 5; breakout entry 10..120 step 10, exit 5..60 step 5); stage 1 on train only: keep trades>=risk.MIN_TRADES and |DD|<=risk.MAX_DD, top 5 per template by train Sharpe; stage 2: protocol.Protocol(close).check(pos) (risk.check incl. buy&hold benchmark); winner = highest validation Sharpe among passers. NEVER evaluate the test segment in this task. Save candidates.json (all shortlisted with train/val metrics and risk reasons) and winner.json (or 'none').",
+     "role": "analyst",
+     "deps": [],
+     "status": "done",
+     "attempts": 1,
+     "output": "Done (train/val only; test segment never evaluated). Data OK: 3017 rows 2014-11-06..2026-11-05, 0 NaN, 0 non-positive; largest move -10.8% on 2026-01-30 (real gold selloff). Segments: train ..2022-01-19, val 2022-01-20..2024-06-12, test 2024-06-13..2026-11-05 (sealed). Tried 620 grid candidates, shortlisted 15, only 1 passed risk.check (most fail the buy&hold benchmark or min validation trades). Winner: rsi_reversion period=5 low=15 high=80: val Sharpe 0.84 vs buy&hold 0.77, val return +12.2% vs +27.8% B&H, val maxDD -6.2% vs -20.2%, 6 val trades. Files: research.py, candidates.json, winner.json. Caveats: 6 trades is still a small sample; it beats B&H on risk-adjusted terms only, not on raw return.",
+     "feedback": "",
+     "agent": "analyst"
+    },
+    {
+     "id": "t2",
+     "title": "Open final test ONCE for the winner",
+     "description": "If winner.json says none: do not open the test; write final.json {opened:false}. Otherwise rebuild the winner's position series from winner.json and call protocol.Protocol(close).open_final(name, params, pos) exactly once (it writes final_test.lock). Save final.json with test metrics, buy&hold comparison and risk.final_check result. Do not retry, do not try other strategies on the test segment.",
+     "role": "analyst",
+     "deps": [
+      "t1"
+     ],
+     "status": "done",
+     "attempts": 1,
+     "output": "Final test opened exactly once via protocol.open_final (final_test.lock written). rsi_reversion_5_15_80 on 2024-06-13..2026-11-05: return -0.45%, Sharpe 0.04, maxDD -18.2%, 2 trades. Buy & hold: +77.5%, Sharpe 1.12, maxDD -26.7%. risk.final_check: FAILED (2 trades < 3; Sharpe 0.04 < buy&hold 1.12). Files: open_final.py, final.json, final_test.lock. Conclusion: no reliable edge.",
+     "feedback": "",
+     "agent": "analyst"
+    },
+    {
+     "id": "t3",
+     "title": "Pine Script + parity check",
+     "description": "Generate Pine v5 for the winner with strategies.pine_fallback (stateful, signals only, BUY/SELL alerts). Add a header comment with the honest result summary placeholder 'see REPORT.md'. Write a Python simulation of the Pine state machine (same RSI/SMA/breakout logic, using strategies' own indicator functions) and verify its position series equals strategies.signal on the full history (report mismatch count). Save indicator.pine and parity.txt.",
+     "role": "engineer",
+     "deps": [
+      "t1"
+     ],
+     "status": "done",
+     "attempts": 1,
+     "output": "Done. indicator.pine: stateful Pine v5 (generated by strategies.pine_fallback) for rsi_reversion 5/15/80, signals only, BUY/SELL alerts, //@version=5 on line 1, honest header. parity.txt: Python simulation of the Pine state machine matches strategies.signal on all 3017 bars (0 mismatches), also with a TradingView-style SMA-seeded RSI (0 mismatches). Caveat: not compiled on TradingView itself (no access here); GC=F daily vs your chart symbol (e.g. OANDA:XAUUSD) can give different signals.",
+     "feedback": "",
+     "agent": "engineer"
+    },
+    {
+     "id": "t4",
+     "title": "Final report",
+     "description": "Write REPORT_GOLD.md in Arabic (Levantine) from candidates.json, winner.json, final.json, parity.txt: protocol, segments, candidates and why they failed, final test vs buy&hold, final_check verdict, and an explicit caveat that the final-test period had been seen before by the operator in an earlier manual run so it is not a fully blind test. If there is no reliable edge say so plainly. Signals only, not financial advice.",
+     "role": "writer",
+     "deps": [
+      "t2",
+      "t3"
+     ],
+     "status": "done",
+     "attempts": 1,
+     "output": "Wrote REPORT_GOLD.md (Arabic): protocol, segments, candidates outcome, final test vs buy&hold, final_check FAILED, reasons, explicit caveats (test period previously seen by the operator; small samples; same-mind QA), file list. All numbers from final.json/winner.json/parity.txt/candidates.json.",
+     "feedback": "",
+     "agent": "writer"
+    }
+   ],
+   "tokens": 35243,
+   "created": "2026-11-06T07:09:42",
+   "summary": "الخلاصة بصراحة: ما في استراتيجية رابحة موثوقة. جرّبنا 620 استراتيجية على بيانات ذهب حقيقية (GC=F 2014-2026) ببروتوكول صارم. وحدة بس (RSI 5/15/80) عدّت فحص المخاطر على التحقق، وعلى الاختبار النهائي (انفتح مرة وحدة) طلعت ‑0.45% مقابل +77.5% للشراء والاحتفاظ، وفشلت بـ final_check. سلّمنا كود Pine مطابق للباكتست 100% (إشارات فقط) بس ما بننصح تستعمله. تنبيه: فترة الاختبار انشافت قبل بتشغيل يدوي، فكل القرارات كانت ميكانيكية مثبّتة مسبقاً. الملفات: city_home/workspace/p2/ (REPORT_GOLD.md, indicator.pine, final.json).",
+   "cost_usd": 0.0,
+   "errors": 0,
+   "final_lock": "711c947257044829aeb9a28d86f76c2b355971d9231f75b8d15787da1c5b0c4e"
+  },
+  "p3": {
+   "id": "p3",
+   "request": "[RESEARCH DAY] #1: continuous gold (GC=F daily) strategy research in the Strategy Lab. Signals only, no trading.\nGoal: find edges that beat buy & hold on risk-adjusted terms AND survive the live forward test.\nPlan at most 3 tasks: (1) review lab_board + company lessons and write ideas.md with 2-3 NEW, economically motivated hypotheses that differ from what was already tried (not parameter tweaks of rejected ideas); (2) implement each as a strategy module (HYPOTHESIS, small PARAMS grid <= 60 combos, causal signal(close, **p) -> 0/1) and submit with lab_submit (each idea ONE submission; never resubmit tweaks to chase validation); (3) write research_log.md: what was tried, lab verdicts, forward-test status of active strategies, honest conclusion.\nRules: never evaluate the validation period yourself to tune; the lab does that once. Quality over quantity.\n\nCURRENT LAB STATE:\nTotal trials so far: 0 (today 0/12). More trials => higher chance of lucky validation results; forward test is the real judge.\n\nFORWARD TEST (0/10 active):\n\nRECENT REJECTIONS (learn from these):",
+   "status": "done",
+   "tasks": [
+    {
+     "id": "t1",
+     "title": "Review lab + write 3 new hypotheses",
+     "description": "load_skill strategy_lab; read lab_board and company lessons. Write ideas.md with 3 economically motivated hypotheses from DIFFERENT families than the old catalog (SMA cross / RSI reversion / breakout already failed vs buy&hold): for each give the mechanism (who is on the other side), the exact causal rule, a small parameter grid (<=60 combos), and what result would falsify it. No backtesting in this task.",
+     "role": "researcher",
+     "deps": [],
+     "status": "done",
+     "attempts": 1,
+     "output": "Wrote ideas.md: 3 hypotheses from new families (vol-filtered time-series momentum, dip-buying only in uptrends, volatility-squeeze breakout), each with mechanism, causal rule, grid <= 12 combos and falsification criteria. Dropped a seasonality idea up front because it cannot meet the minimum trade count. No backtests run.",
+     "feedback": "",
+     "agent": "researcher"
+    },
+    {
+     "id": "t2",
+     "title": "Implement and submit each idea once",
+     "description": "For each hypothesis in ideas.md write ideas/<name>.py (HYPOTHESIS, PARAMS, causal signal(close, **p) -> 0/1). Sanity-run each signal on data.from_yahoo() only to check it runs and returns 0/1 (do NOT compute any performance on validation yourself). Then lab_submit each exactly once. Save lab_results.json with every verdict as returned.",
+     "role": "analyst",
+     "deps": [
+      "t1"
+     ],
+     "status": "done",
+     "attempts": 1,
+     "output": "Implemented 3 causal modules in ideas/ and submitted each exactly once (3 trials). Verdicts from the lab: vol_filtered_momentum REJECTED (best train params L=60,q=0.6; val Sharpe 0.48 < buy&hold 0.77). dip_in_uptrend PROMOTED to the forward test (T=100, x=3%, E=20; train Sharpe 1.00, val Sharpe 0.88 vs buy&hold 0.77, 18 val trades). vol_squeeze_breakout REJECTED (val Sharpe -1.68, only 4 val trades, overfit gap). Saved lab_results.json. Caveat: the validation period has been seen in earlier city runs, so the forward test on new days is the only clean judge of dip_in_uptrend.",
+     "feedback": "",
+     "agent": "analyst"
+    },
+    {
+     "id": "t3",
+     "title": "Research log",
+     "description": "Write research_log.md (Arabic, Levantine): ideas tried, lab verdict and reason for each, what entered the forward test, total trial count, honest conclusion and what to try next time. Use only lab_results.json and lab_board.",
+     "role": "writer",
+     "deps": [
+      "t2"
+     ],
+     "status": "done",
+     "attempts": 1,
+     "output": "Wrote research_log.md (Arabic): 3 ideas, verdicts and reasons, one in forward test, total 3 trials, caveat that validation was seen before so forward test is the real judge, plan for next round.",
+     "feedback": "",
+     "agent": "writer"
+    }
+   ],
+   "tokens": 38773,
+   "created": "2026-11-06T07:48:12",
+   "summary": "جولة البحث الأولى خلصت. الفريق اخترع 3 أفكار جديدة وقدّمها للمختبر مرة وحدة لكل فكرة. فكرة 'شراء النزلة بالترند الصاعد' عدّت فحص المخاطر (Sharpe تحقق 0.88 مقابل 0.77 للشراء والاحتفاظ، 18 صفقة) ودخلت اختبار المستقبل؛ التانيتين انرفضوا. هاد مش دليل ربح لسا: الحكم الحقيقي على الأيام الجاية، وبدنا شي 60 يوم. السجل: city_home/workspace/p3/research_log.md",
+   "cost_usd": 0.0,
+   "errors": 0
+  }
+ },
+ "agents": {
+  "researcher": {
+   "role": "researcher",
+   "tools": [
+    "read_file",
+    "write_file",
+    "list_files",
+    "list_skills",
+    "load_skill",
+    "save_skill",
+    "request_approval",
+    "fetch_url",
+    "lab_board"
+   ],
+   "instructions": "You research topics rigorously, compare sources, and write findings to files."
+  },
+  "engineer": {
+   "role": "engineer",
+   "tools": [
+    "read_file",
+    "write_file",
+    "list_files",
+    "list_skills",
+    "load_skill",
+    "save_skill",
+    "request_approval",
+    "run_python",
+    "shell",
+    "lab_submit",
+    "lab_board"
+   ],
+   "instructions": "You write and TEST code. Never claim code works before running it."
+  },
+  "analyst": {
+   "role": "analyst",
+   "tools": [
+    "read_file",
+    "write_file",
+    "list_files",
+    "list_skills",
+    "load_skill",
+    "save_skill",
+    "request_approval",
+    "run_python",
+    "fetch_url",
+    "lab_submit",
+    "lab_board"
+   ],
+   "instructions": "You analyze data and run experiments with strict methodology (no data leakage)."
+  },
+  "writer": {
+   "role": "writer",
+   "tools": [
+    "read_file",
+    "write_file",
+    "list_files",
+    "list_skills",
+    "load_skill",
+    "save_skill",
+    "request_approval"
+   ],
+   "instructions": "You write clear reports and documentation from the team's outputs."
+  },
+  "qa": {
+   "role": "qa",
+   "tools": [
+    "read_file",
+    "list_files",
+    "run_python",
+    "list_skills",
+    "load_skill",
+    "lab_board"
+   ],
+   "instructions": "You independently verify deliverables by reading files and running code. Be strict."
+  }
+ },
+ "approvals": {},
+ "lessons": [
+  "QA should verify against an independent reference (naive method / known values), not only rerun the worker's tests.",
+  "Docs tasks: QA re-runs every documented command and compares output verbatim.",
+  "Mean-reversion templates rarely beat buy & hold on gold in strong trends; any new gold research needs genuinely unseen (forward) data.",
+  "Fix: seed skill docs must be refreshed when the toolkit changes (agents loaded a stale gold_toolkit skill).",
+  "QA should check every headline number in reports against the result JSON automatically.",
+  "Momentum alone did not beat buy & hold on gold validation; combine trend with an entry timing rule instead.",
+  "Volatility-squeeze breakouts failed badly on gold 2022-2024; do not retry without a new, independent reason.",
+  "Check minimum-trade feasibility before submitting (calendar rules cannot reach 10 train trades)."
+ ],
+ "seq": 3
+}
